@@ -83,10 +83,10 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(
-                                "/api/auth/**"
-                        ).permitAll()
-
-                        .requestMatchers(
+                                "/",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/api/auth/**",
                                 "/uploads/**"
                         ).permitAll()
 
