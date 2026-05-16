@@ -35,7 +35,8 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         config.setAllowedOrigins(
-                List.of("http://localhost:5174")
+                List.of("http://localhost:5174",
+                        "https://saikumaredutech.netlify.app/")
         );
 
         config.setAllowedMethods(
