@@ -22,14 +22,11 @@ public class ImageService {
     private final UserRepository userRepository;
 
     public ImageFile upload(MultipartFile file, String description) throws Exception {
+
         String email = AuthUtil.getCurrentUserEmail();
+
         User user = userRepository.findByEmail(email).orElseThrow();
-        ImageFile image = ImageFile.builder()
-                .originalName(file.getOriginalFilename())
-                .description(description)
-                .uploadedBy(user.getUsername())
-                .imageData(file.getBytes())
-                .build();
+        ImageFile image = ImageFile.builder().originalName(file.getOriginalFilename()).description(description).uploadedBy(user.getUsername()).contentType(file.getContentType()).imageData(file.getBytes()).build();
         return imageRepository.save(image);
     }
 
@@ -41,8 +38,7 @@ public class ImageService {
                         .description(img.getDescription())
                         .uploadedBy(img.getUploadedBy())
                         .originalName(img.getOriginalName())
-                        .image("data:image/jpeg;base64," + Base64.getEncoder().encodeToString(img.getImageData()))
+                        .image("data:" + img.getContentType() + ";base64," + Base64.getEncoder().encodeToString(img.getImageData()))
                         .build()).toList();
     }
-
 }

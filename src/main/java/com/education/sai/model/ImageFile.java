@@ -25,6 +25,8 @@ public class ImageFile {
 
     private LocalDateTime uploadedAt;
 
+    private String contentType;
+
     @Lob
     @Column(columnDefinition = "BYTEA")
     private byte[] imageData;
