@@ -5,6 +5,7 @@ import com.education.sai.service.ImageService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,7 +24,7 @@ public class ImageController {
     }
 
     @GetMapping
-    public List<ImageFile> getAll() {
-        return imageService.getAll();
+    public ResponseEntity<?> getAll(){
+        return ResponseEntity.ok(imageService.getAll());
     }
 }
