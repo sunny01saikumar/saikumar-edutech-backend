@@ -27,21 +27,16 @@ public class ImageService {
     @Value("${app.base-url}")
     private String baseUrl;
 
-    private final ImageRepository
-            imageRepository;
+    private final ImageRepository imageRepository;
 
-    private final UserRepository
-            userRepository;
-
+    private final UserRepository userRepository;
 
     public ImageFile upload(
 
             MultipartFile file,
-
             String description
 
     ) throws Exception {
-
 
         String email =
                 AuthUtil.getCurrentUserEmail();
@@ -51,14 +46,11 @@ public class ImageService {
                         .findByEmail(email)
                         .orElseThrow();
 
-
-
         String fileName =
 
                 UUID.randomUUID()
                         + "_"
                         + file.getOriginalFilename();
-
 
         Path path =
                 Paths.get(
@@ -66,30 +58,23 @@ public class ImageService {
                         fileName
                 );
 
-
         Files.createDirectories(
                 path.getParent()
         );
 
-
         Files.copy(
 
                 file.getInputStream(),
-
                 path,
+                StandardCopyOption.REPLACE_EXISTING
 
-                StandardCopyOption
-                        .REPLACE_EXISTING
         );
-
 
         String imageUrl =
 
                 baseUrl
                         + "/uploads/"
                         + fileName;
-
-
 
         ImageFile image =
                 ImageFile.builder()
@@ -100,12 +85,13 @@ public class ImageService {
                                 file.getOriginalFilename()
                         )
 
-                        // save web path instead of local path
                         .filePath(
-                                "/uploads/" + fileName
+                                imageUrl
                         )
 
-                        .description(description)
+                        .description(
+                                description
+                        )
 
                         .uploadedBy(
                                 user.getUsername()
@@ -122,11 +108,9 @@ public class ImageService {
         );
     }
 
-
     public List<ImageFile> getAll() {
 
         return imageRepository.findAll();
 
     }
-
 }
