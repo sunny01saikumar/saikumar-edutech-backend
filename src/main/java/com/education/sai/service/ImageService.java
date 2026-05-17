@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ImageService {
 
-    @Value("${file.upload-dir}")
+    @Value("${file.upload.dir}")
     private String uploadDir;
 
     @Value("${app.base-url}")
@@ -92,24 +92,20 @@ public class ImageService {
 
 
         ImageFile image =
-
                 ImageFile.builder()
 
-                        .fileName(
-                                fileName
-                        )
+                        .fileName(fileName)
 
                         .originalName(
                                 file.getOriginalFilename()
                         )
 
+                        // save web path instead of local path
                         .filePath(
-                                imageUrl
+                                "/uploads/" + fileName
                         )
 
-                        .description(
-                                description
-                        )
+                        .description(description)
 
                         .uploadedBy(
                                 user.getUsername()
@@ -120,7 +116,6 @@ public class ImageService {
                         )
 
                         .build();
-
 
         return imageRepository.save(
                 image

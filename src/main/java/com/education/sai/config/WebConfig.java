@@ -13,9 +13,8 @@ public class WebConfig
             ResourceHandlerRegistry registry
     ) {
 
-        registry.addResourceHandler(
-                        "/uploads/**"
-                )
+        registry
+                .addResourceHandler("/uploads/**")
                 .addResourceLocations(
                         "file:uploads/"
                 );
