@@ -28,89 +28,22 @@ public class ImageService {
     private String baseUrl;
 
     private final ImageRepository imageRepository;
-
     private final UserRepository userRepository;
 
-    public ImageFile upload(
-
-            MultipartFile file,
-            String description
-
-    ) throws Exception {
-
-        String email =
-                AuthUtil.getCurrentUserEmail();
-
-        User user =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow();
-
-        String fileName =
-
-                UUID.randomUUID()
-                        + "_"
-                        + file.getOriginalFilename();
-
-        Path path =
-                Paths.get(
-                        uploadDir,
-                        fileName
-                );
-
-        Files.createDirectories(
-                path.getParent()
-        );
-
-        Files.copy(
-
-                file.getInputStream(),
-                path,
-                StandardCopyOption.REPLACE_EXISTING
-
-        );
-
-        String imageUrl =
-
-                baseUrl
-                        + "/uploads/"
-                        + fileName;
-
-        ImageFile image =
-                ImageFile.builder()
-
-                        .fileName(fileName)
-
-                        .originalName(
-                                file.getOriginalFilename()
-                        )
-
-                        .filePath(
-                                imageUrl
-                        )
-
-                        .description(
-                                description
-                        )
-
-                        .uploadedBy(
-                                user.getUsername()
-                        )
-
-                        .uploadedAt(
-                                LocalDateTime.now()
-                        )
-
-                        .build();
-
-        return imageRepository.save(
-                image
-        );
+    public ImageFile upload(MultipartFile file, String description) throws Exception {
+        String email = AuthUtil.getCurrentUserEmail();
+        User user = userRepository.findByEmail(email).orElseThrow();
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path path = Paths.get(uploadDir, fileName);
+        Files.createDirectories(path.getParent());
+        Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+        String imageUrl = baseUrl + "/uploads/" + fileName;
+        ImageFile image = ImageFile.builder().fileName(fileName).originalName(file.getOriginalFilename()).filePath(imageUrl)
+                          .description(description).uploadedBy(user.getUsername()).uploadedAt(LocalDateTime.now()).build();
+        return imageRepository.save(image);
     }
 
     public List<ImageFile> getAll() {
-
         return imageRepository.findAll();
-
     }
 }

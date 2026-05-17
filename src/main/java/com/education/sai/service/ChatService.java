@@ -18,68 +18,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatService {
 
-    private final MessageRepository
-            messageRepository;
+    private final MessageRepository messageRepository;
+    private final UserRepository userRepository;
 
-    private final UserRepository
-            userRepository;
 
-    /*
-        SEND MESSAGE
-    */
-
-    public MessageClass sendMessage(
-            SendMessageRequest request
-    ) {
-
-        String email =
-                AuthUtil.getCurrentUserEmail();
-
-        User sender =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow();
-
-        MessageClass message =
-                MessageClass.builder()
-
-                        .senderId(
-                                sender.getId()
-                        )
-
-                        .receiverId(
-                                request.getReceiverId()
-                        )
-
-                        .content(
-                                request.getContent()
-                        )
-
-                        .createdAt(
-                                LocalDateTime.now()
-                        )
-
-                        .build();
-
-        return messageRepository.save(
-                message
-        );
+    public MessageClass sendMessage(SendMessageRequest request) {
+        String email = AuthUtil.getCurrentUserEmail();
+        User sender = userRepository.findByEmail(email).orElseThrow();
+        MessageClass message = MessageClass.builder().senderId(sender.getId())
+                .receiverId(request.getReceiverId()).content(request.getContent())
+                .createdAt(LocalDateTime.now())
+                .build();
+        return messageRepository.save(message);
     }
 
-    /*
-        GET CHAT
-    */
-
-    public List<MessageClass> getConversation(
-
-            Long user1,
-            Long user2
-    ) {
-
-        return messageRepository
-                .getConversation(
-                        user1,
-                        user2
-                );
+    public List<MessageClass> getConversation(Long user1, Long user2) {
+        return messageRepository.getConversation(user1, user2);
     }
 }

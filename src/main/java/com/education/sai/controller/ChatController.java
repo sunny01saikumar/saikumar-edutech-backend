@@ -15,40 +15,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatController {
 
-    private final ChatService
-            chatService;
-
-    /*
-        SEND MESSAGE
-    */
+    private final ChatService chatService;
 
     @PostMapping("/send")
-    public MessageClass send(
-
-            @RequestBody
-            SendMessageRequest request
-    ) {
-
-        return chatService.sendMessage(
-                request
-        );
+    public MessageClass send(@RequestBody SendMessageRequest request) {
+        return chatService.sendMessage(request);
     }
 
-    /*
-        GET CONVERSATION
-    */
-
     @GetMapping("/conversation")
-    public List<MessageClass> conversation(
-
-            @RequestParam Long user1,
-
-            @RequestParam Long user2
-    ) {
-
-        return chatService.getConversation(
-                user1,
-                user2
-        );
+    public List<MessageClass> conversation(@RequestParam Long user1, @RequestParam Long user2) {
+        return chatService.getConversation(user1, user2);
     }
 }

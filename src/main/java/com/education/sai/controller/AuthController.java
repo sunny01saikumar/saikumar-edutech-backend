@@ -23,64 +23,28 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/register")
-    public String register(
-            @RequestBody RegisterRequest request
-    ) {
-
-        User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .password(
-                        passwordEncoder.encode(
-                                request.getPassword()
-                        )
-                )
-                .build();
-
+    public String register(@RequestBody RegisterRequest request) {
+        User user = User.builder().username(request.getUsername()).email(request.getEmail()).password(passwordEncoder.encode(request.getPassword())).build();
         userRepository.save(user);
-
         return "User Registered";
     }
 
     @PostMapping("/login")
-    public LoginResponse login(
-            @RequestBody LoginRequest request
-    ) {
-
-        User user = userRepository
-                .findByEmail(request.getEmail())
-                .orElseThrow();
-
-        boolean matches =
-                passwordEncoder.matches(
-                        request.getPassword(),
-                        user.getPassword()
-                );
+    public LoginResponse login(@RequestBody LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        boolean matches = passwordEncoder.matches(request.getPassword(), user.getPassword());
 
         if (!matches) {
-            throw new RuntimeException(
-                    "Invalid Credentials"
-            );
+            throw new RuntimeException("Invalid Credentials");
         }
 
-        String token =
-                jwtService.generateToken(
-                        user.getEmail()
-                );
-
-        return LoginResponse.builder()
-                .token(token)
-                .build();
+        String token = jwtService.generateToken(user.getEmail());
+        return LoginResponse.builder().token(token).build();
     }
 
     @GetMapping("/me")
     public Optional<User> me() {
-
-        String email =
-                AuthUtil.getCurrentUserEmail();
-
-        return userRepository.findByEmail(
-                email
-        );
+        String email = AuthUtil.getCurrentUserEmail();
+        return userRepository.findByEmail(email);
     }
 }

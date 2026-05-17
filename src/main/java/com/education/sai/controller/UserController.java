@@ -15,12 +15,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository
-            userRepository;
+    private final UserRepository userRepository;
 
     @GetMapping
     public List<User> users() {
-
         return userRepository.findAll();
     }
 }

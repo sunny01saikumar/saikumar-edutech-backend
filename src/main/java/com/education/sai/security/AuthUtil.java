@@ -6,12 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class AuthUtil {
 
     public static String getCurrentUserEmail() {
-
-        Authentication auth =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth.getName();
     }
 }

@@ -17,34 +17,13 @@ public class ImageController {
 
     private final ImageService imageService;
 
-    /*
-        UPLOAD
-    */
-
     @PostMapping("/upload")
-    public ImageFile upload(
-
-            @RequestParam("file")
-            MultipartFile file,
-
-            @RequestParam("description")
-            String description
-
-    ) throws Exception {
-
-        return imageService.upload(
-                file,
-                description
-        );
+    public ImageFile upload(@RequestParam("file") MultipartFile file, @RequestParam("description") String description) throws Exception {
+        return imageService.upload(file, description);
     }
-
-    /*
-        GET ALL
-    */
 
     @GetMapping
     public List<ImageFile> getAll() {
-
         return imageService.getAll();
     }
 }
