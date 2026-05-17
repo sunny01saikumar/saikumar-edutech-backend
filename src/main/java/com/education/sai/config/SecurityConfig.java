@@ -48,7 +48,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/", "/swagger-ui/**", "/v3/api-docs/**", "/api/auth/**", "/uploads/**").permitAll()
+                        .requestMatchers("/",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/api/auth/**",
+                                "/api/images/**",
+                                "/uploads/**").permitAll()
                         .anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
