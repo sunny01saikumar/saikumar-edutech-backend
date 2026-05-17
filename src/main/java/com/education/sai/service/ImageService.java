@@ -24,11 +24,15 @@ public class ImageService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    @Value("${app.base-url}")
+    private String baseUrl;
+
     private final ImageRepository
             imageRepository;
 
     private final UserRepository
             userRepository;
+
 
     public ImageFile upload(
 
@@ -38,9 +42,6 @@ public class ImageService {
 
     ) throws Exception {
 
-        /*
-            GET CURRENT USER
-        */
 
         String email =
                 AuthUtil.getCurrentUserEmail();
@@ -50,9 +51,7 @@ public class ImageService {
                         .findByEmail(email)
                         .orElseThrow();
 
-        /*
-            GENERATE FILE NAME
-        */
+
 
         String fileName =
 
@@ -60,34 +59,52 @@ public class ImageService {
                         + "_"
                         + file.getOriginalFilename();
 
+
         Path path =
-                Paths.get(uploadDir, fileName);
+                Paths.get(
+                        uploadDir,
+                        fileName
+                );
+
 
         Files.createDirectories(
                 path.getParent()
         );
 
+
         Files.copy(
+
                 file.getInputStream(),
+
                 path,
-                StandardCopyOption.REPLACE_EXISTING
+
+                StandardCopyOption
+                        .REPLACE_EXISTING
         );
 
-        /*
-            SAVE IMAGE
-        */
+
+        String imageUrl =
+
+                baseUrl
+                        + "/uploads/"
+                        + fileName;
+
+
 
         ImageFile image =
+
                 ImageFile.builder()
 
-                        .fileName(fileName)
+                        .fileName(
+                                fileName
+                        )
 
                         .originalName(
                                 file.getOriginalFilename()
                         )
 
                         .filePath(
-                                path.toString()
+                                imageUrl
                         )
 
                         .description(
@@ -104,13 +121,17 @@ public class ImageService {
 
                         .build();
 
+
         return imageRepository.save(
                 image
         );
     }
 
+
     public List<ImageFile> getAll() {
 
         return imageRepository.findAll();
+
     }
+
 }
