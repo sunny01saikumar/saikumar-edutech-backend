@@ -11,7 +11,7 @@ public class ImageResponse {
 
     private Long id;
 
-    private String image;
+    private String imageUrl;
 
     private String description;
 

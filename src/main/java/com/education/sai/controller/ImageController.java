@@ -25,6 +25,11 @@ public class ImageController {
 
     @GetMapping
     public ResponseEntity<?> getAll(){
-        return ResponseEntity.ok(imageService.getAll());
+        try{
+            return ResponseEntity.ok(imageService.getAll());
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+        return null;
     }
 }
