@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/swagger-ui/**", "/v3/api-docs/**", "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
-                        .requestMatchers("/api/blogs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/blogs/").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
