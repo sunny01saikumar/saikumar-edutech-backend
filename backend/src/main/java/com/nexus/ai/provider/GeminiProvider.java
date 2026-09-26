@@ -72,6 +72,61 @@ public class GeminiProvider implements AIProvider {
         return list.stream().distinct().toList();
     }
 
+    private List<String> discoverAvailableModels(WebClient webClient, String apiKey, String preferredModel) {
+        List<String> discovered = new ArrayList<>();
+        if (preferredModel != null && !preferredModel.trim().isEmpty()
+                && !preferredModel.equalsIgnoreCase("default")
+                && !preferredModel.equalsIgnoreCase("default model")) {
+            discovered.add(preferredModel.trim().replace("models/", ""));
+        }
+
+        try {
+            String json = webClient.get()
+                    .uri("models?key=" + apiKey)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            if (json != null) {
+                JsonNode root = objectMapper.readTree(json);
+                if (root.has("models") && root.get("models").isArray()) {
+                    for (JsonNode m : root.get("models")) {
+                        String name = m.path("name").asText("");
+                        if (name.startsWith("models/")) {
+                            name = name.substring(7);
+                        }
+                        JsonNode methods = m.path("supportedGenerationMethods");
+                        boolean supportsGen = false;
+                        if (methods.isArray()) {
+                            for (JsonNode meth : methods) {
+                                String mStr = meth.asText();
+                                if ("generateContent".equals(mStr) || "streamGenerateContent".equals(mStr)) {
+                                    supportsGen = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (supportsGen && !name.isEmpty() && !discovered.contains(name)) {
+                            discovered.add(name);
+                        }
+                    }
+                }
+            }
+        } catch (WebClientResponseException ex) {
+            log.warn("Gemini API key verification failed: {}", ex.getResponseBodyAsString());
+            if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 403) {
+                throw new AIProviderUnavailableException(getProviderName(), "Invalid Google Gemini API Key. Click 'API Keys' in top right to paste a valid key from Google AI Studio (aistudio.google.com).");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to dynamically fetch Gemini models: {}", e.getMessage());
+        }
+
+        if (discovered.isEmpty()) {
+            return getModelCandidates(preferredModel);
+        }
+        return discovered;
+    }
+
     @Override
     public AiResponse generate(AiRequest request) {
         String apiKey = getEffectiveKey(request);
@@ -88,7 +143,7 @@ public class GeminiProvider implements AIProvider {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
-        List<String> candidates = getModelCandidates(request.getRequestedModel());
+        List<String> candidates = discoverAvailableModels(webClient, apiKey, request.getRequestedModel());
         for (String model : candidates) {
             try {
                 String jsonResponse = webClient.post()
@@ -124,7 +179,7 @@ public class GeminiProvider implements AIProvider {
             }
         }
 
-        throw new AIProviderUnavailableException(getProviderName(), "No valid Gemini models found for configured key.");
+        throw new AIProviderUnavailableException(getProviderName(), "No valid Gemini models found for configured key. Please verify your Google AI Studio key.");
     }
 
     @Override
@@ -142,7 +197,12 @@ public class GeminiProvider implements AIProvider {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
-        List<String> candidates = getModelCandidates(request.getRequestedModel());
+        List<String> candidates;
+        try {
+            candidates = discoverAvailableModels(webClient, apiKey, request.getRequestedModel());
+        } catch (AIProviderUnavailableException ex) {
+            return Flux.error(ex);
+        }
         return streamWithCandidates(webClient, candidates, 0, apiKey, body);
     }
 
