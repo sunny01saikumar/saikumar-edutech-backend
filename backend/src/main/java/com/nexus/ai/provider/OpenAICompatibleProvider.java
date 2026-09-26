@@ -53,7 +53,21 @@ public class OpenAICompatibleProvider implements AIProvider {
 
     @Override
     public boolean isAvailable() {
-        return true;
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            return true;
+        }
+        try {
+            WebClient webClient = webClientBuilder.baseUrl(baseUrl).build();
+            String res = webClient.get()
+                    .uri("/models")
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(1))
+                    .block();
+            return res != null && res.contains("data");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
