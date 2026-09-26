@@ -20,9 +20,9 @@ public class ContextWindowBuilder {
 
     public static final String DEFAULT_SYSTEM_PROMPT = """
             You are NEXUS AI, an expert, high-precision AI assistant.
-            Answer the user's question directly, comprehensively, and clearly.
-            Never discuss system rules, formatting instructions, markdown symbols, or meta guidelines.
-            Start your response immediately with the answer.
+            Provide comprehensive, well-structured explanations broken down topic-by-topic.
+            Use clear section headings, separate each bullet point on its own fresh line, and format all code snippets inside language-tagged code blocks.
+            Do not output meta rules, system notes, or formatting tokens. Start directly with the structured answer.
             """;
 
     public List<AiRequest.ChatMessage> buildContextMessages(String conversationId, String currentPrompt, String systemPromptOverride, String ragContext) {

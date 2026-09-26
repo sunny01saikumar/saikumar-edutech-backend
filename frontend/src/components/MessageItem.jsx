@@ -19,7 +19,11 @@ function preprocessMarkdown(text) {
   content = content.replace(/Use (code|Copy code|##|###|\*|\-|\w+)+ (for main headings|for subheadings|for bullet points|for lists|for workflow representation)/gsi, '');
   content = content.replace(/\*\s*Use\s+code\s+Copy code.*?\n/gsi, '\n');
 
-  // 2. Convert LaTeX arrows to clean Unicode
+  // 2. Fix inline list squashing (convert inline '* Item' into clean fresh-line lists)
+  content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'\(\[\{])/g, '$1\n\n* $2');
+  content = content.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'\(\[\{])/g, '$1\n\n$2');
+
+  // 3. Convert LaTeX arrows to clean Unicode
   content = content
     .replace(/\\rightarrow|\$\s*\\rightarrow\s*\$|\$\s*\\to\s*\$|\\to/g, '→')
     .replace(/\\leftarrow|\$\s*\\leftarrow\s*\$/g, '←')
