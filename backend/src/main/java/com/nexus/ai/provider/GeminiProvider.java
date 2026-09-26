@@ -76,7 +76,9 @@ public class GeminiProvider implements AIProvider {
         String model = resolveModel(request.getRequestedModel());
         Map<String, Object> body = buildRequestBody(request);
 
-        WebClient webClient = webClientBuilder.baseUrl(baseUrl)
+        String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        WebClient webClient = webClientBuilder.baseUrl(normalizedBaseUrl)
+                .defaultHeader("x-goog-api-key", apiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
@@ -84,16 +86,16 @@ public class GeminiProvider implements AIProvider {
             String jsonResponse;
             try {
                 jsonResponse = webClient.post()
-                        .uri("/models/" + model + ":generateContent?key=" + apiKey)
+                        .uri("models/" + model + ":generateContent?key=" + apiKey)
                         .bodyValue(body)
                         .retrieve()
                         .bodyToMono(String.class)
                         .block();
             } catch (WebClientResponseException.NotFound ex) {
-                String fallbackModel = model.contains("flash") ? "gemini-1.5-pro" : "gemini-1.5-flash";
+                String fallbackModel = model.contains("flash") ? "gemini-2.0-flash" : "gemini-1.5-flash";
                 log.warn("Gemini model [{}] returned 404. Retrying with fallback model [{}]", model, fallbackModel);
                 jsonResponse = webClient.post()
-                        .uri("/models/" + fallbackModel + ":generateContent?key=" + apiKey)
+                        .uri("models/" + fallbackModel + ":generateContent?key=" + apiKey)
                         .bodyValue(body)
                         .retrieve()
                         .bodyToMono(String.class)
@@ -134,12 +136,14 @@ public class GeminiProvider implements AIProvider {
         String model = resolveModel(request.getRequestedModel());
         Map<String, Object> body = buildRequestBody(request);
 
-        WebClient webClient = webClientBuilder.baseUrl(baseUrl)
+        String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        WebClient webClient = webClientBuilder.baseUrl(normalizedBaseUrl)
+                .defaultHeader("x-goog-api-key", apiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
         return webClient.post()
-                .uri("/models/" + model + ":streamGenerateContent?alt=sse&key=" + apiKey)
+                .uri("models/" + model + ":streamGenerateContent?alt=sse&key=" + apiKey)
                 .bodyValue(body)
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .retrieve()
@@ -147,10 +151,10 @@ public class GeminiProvider implements AIProvider {
                 .map(this::extractDeltaToken)
                 .filter(token -> !token.isEmpty())
                 .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
-                    String fallbackModel = model.contains("flash") ? "gemini-1.5-pro" : "gemini-1.5-flash";
+                    String fallbackModel = model.contains("flash") ? "gemini-2.0-flash" : "gemini-1.5-flash";
                     log.warn("Gemini model [{}] returned 404. Retrying with fallback model [{}]", model, fallbackModel);
                     return webClient.post()
-                            .uri("/models/" + fallbackModel + ":streamGenerateContent?alt=sse&key=" + apiKey)
+                            .uri("models/" + fallbackModel + ":streamGenerateContent?alt=sse&key=" + apiKey)
                             .bodyValue(body)
                             .accept(MediaType.TEXT_EVENT_STREAM)
                             .retrieve()
