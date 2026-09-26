@@ -8,7 +8,12 @@ function preprocessMarkdown(text) {
   if (!text) return '';
   let content = text;
 
-  // 1. Convert raw LaTeX arrows and math symbols to clean Unicode
+  // 1. Strip leading echoed system instructions/prompts if leaked by model
+  content = content.replace(/^User question:.*?\n\n/is, '');
+  content = content.replace(/^Persona requirements:.*?\n\n/is, '');
+  content = content.replace(/^Definition:.*?\n\n/is, '');
+
+  // 2. Convert raw LaTeX arrows and math symbols to clean Unicode
   content = content
     .replace(/\\rightarrow|\$\\rightarrow\$|\$\\to\$|\\to/g, '→')
     .replace(/\\leftarrow|\$\\leftarrow\$/g, '←')
@@ -16,20 +21,24 @@ function preprocessMarkdown(text) {
     .replace(/\\Leftrightarrow|\$\\Leftrightarrow\$/g, '⇔')
     .replace(/\\in|\$\\in\$/g, '∈');
 
-  // 2. Expand squashed list items (* item 1 * item 2) into clean newline lists
+  // 3. Convert inline heading phrases (e.g. "Code ExampleHere is" or "Explanation of the Code:") to proper Markdown headings
+  content = content.replace(/Code Example\s*/gi, '\n\n### Code Example\n\n');
+  content = content.replace(/Explanation of the Code:\s*/gi, '\n\n### Explanation of the Code\n\n');
+
+  // 4. Expand squashed list items (* item 1 * item 2) into clean newline lists
   content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'])/g, '$1\n\n* $2');
 
-  // 3. Expand squashed numbered lists (1. item 1 2. item 2) into clean newline lists
+  // 5. Expand squashed numbered lists (1. item 1 2. item 2) into clean newline lists
   content = content.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'])/g, '$1\n\n$2');
 
-  // 4. Expand squashed Markdown headers (text### 1. Section)
+  // 6. Expand squashed Markdown headers (text### 1. Section)
   content = content.replace(/([^\n])\s*(#{1,6}\s+)/g, '$1\n\n$2');
   content = content.replace(/---\s*(#{1,6}\s+)/g, '\n---\n\n$1');
 
-  // 5. Ensure code blocks always start on a fresh new line
+  // 7. Ensure code blocks always start on a fresh new line
   content = content.replace(/([^\n])(```\w*)/g, '$1\n$2');
 
-  return content;
+  return content.trim();
 }
 
 export default function MessageItem({ message, isStreaming }) {
@@ -62,15 +71,10 @@ export default function MessageItem({ message, isStreaming }) {
 
         {/* Content Area */}
         <div className="flex-1 overflow-hidden space-y-2">
-          {/* Header Role info & Metadata */}
+          {/* Header Role info */}
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span className="font-semibold text-gray-200 flex items-center gap-1.5">
               {isUser ? 'You' : 'NEXUS AI'}
-              {!isUser && message.providerUsed && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">
-                  {message.providerUsed} {message.modelUsed ? `(${message.modelUsed})` : ''}
-                </span>
-              )}
             </span>
 
             {!isUser && (message.latencyMs > 0 || message.promptTokens > 0) && (
@@ -106,19 +110,22 @@ export default function MessageItem({ message, isStreaming }) {
 
                     if (!inline && match) {
                       return (
-                        <div className="relative group rounded-xl overflow-hidden border border-gray-800 bg-[#0B0F19] my-4 shadow-xl">
-                          <div className="flex items-center justify-between px-4 py-2 bg-gray-900/80 border-b border-gray-800 text-xs text-gray-400 font-mono">
-                            <span className="text-indigo-400 uppercase font-semibold">{match[1]}</span>
+                        <div className="relative group rounded-xl overflow-hidden border border-gray-700 bg-[#0F1424] my-4 shadow-xl">
+                          <div className="flex items-center justify-between px-4 py-2 bg.gray-900/90 border-b border-gray-800 text-xs text-gray-300 font-mono">
+                            <span className="text-cyan-400 uppercase font-semibold tracking-wider flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                              {match[1]}
+                            </span>
                             <button
                               onClick={() => handleCopy(codeString)}
-                              className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+                              className="flex items-center gap-1 px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white transition-colors text-xs font-sans"
                             >
-                              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
                               <span>{copied ? 'Copied!' : 'Copy code'}</span>
                             </button>
                           </div>
-                          <pre className="p-4 overflow-x-auto text-xs leading-relaxed font-mono">
-                            <code className={className} {...props}>
+                          <pre className="p-4 overflow-x-auto text-xs leading-relaxed font-mono bg-[#0B0F19] text-gray-100">
+                            <code className={`${className || ''} text-gray-100`} {...props}>
                               {children}
                             </code>
                           </pre>

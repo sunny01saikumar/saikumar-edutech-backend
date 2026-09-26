@@ -183,3 +183,36 @@ body {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
 }
+
+/* Code Syntax Highlighting Theme (Atom One Dark) */
+.hljs {
+  color: #ABB2BF !important;
+  background: transparent !important;
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-subst {
+  color: #F43F5E !important;
+  font-weight: 600;
+}
+.hljs-string, .hljs-title, .hljs-section, .hljs-attribute, .hljs-literal, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-addition {
+  color: #38BDF8 !important;
+}
+.hljs-comment, .hljs-quote, .hljs-deletion, .hljs-meta {
+  color: #64748B !important;
+  font-style: italic;
+}
+.hljs-number, .hljs-regexp, .hljs-literal, .hljs-link {
+  color: #F59E0B !important;
+}
+.hljs-variable, .hljs-template-variable, .hljs-tag, .hljs-name {
+  color: #A855F7 !important;
+}
+.hljs-function, .hljs-title.function_ {
+  color: #818CF8 !important;
+  font-weight: 600;
+}
+.hljs-params {
+  color: #CBD5E1 !important;
+}
+.hljs-built_in, .hljs-class .hljs-title {
+  color: #FACC15 !important;
+}
