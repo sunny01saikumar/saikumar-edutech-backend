@@ -56,13 +56,20 @@ public class GeminiProvider implements AIProvider {
         return envApiKey;
     }
 
-    private String resolveModel(String requestedModel) {
-        if (requestedModel == null || requestedModel.trim().isEmpty()
-                || requestedModel.equalsIgnoreCase("default")
-                || requestedModel.equalsIgnoreCase("default model")) {
-            return "gemini-1.5-flash";
+    private List<String> getModelCandidates(String preferredModel) {
+        List<String> list = new ArrayList<>();
+        if (preferredModel != null && !preferredModel.trim().isEmpty()
+                && !preferredModel.equalsIgnoreCase("default")
+                && !preferredModel.equalsIgnoreCase("default model")) {
+            list.add(preferredModel.trim());
         }
-        return requestedModel.trim();
+        list.add("gemini-1.5-flash");
+        list.add("gemini-2.0-flash");
+        list.add("gemini-1.5-flash-002");
+        list.add("gemini-1.5-pro");
+        list.add("gemini-1.5-pro-002");
+        list.add("gemini-pro");
+        return list.stream().distinct().toList();
     }
 
     @Override
@@ -73,7 +80,6 @@ public class GeminiProvider implements AIProvider {
         }
 
         long start = System.currentTimeMillis();
-        String model = resolveModel(request.getRequestedModel());
         Map<String, Object> body = buildRequestBody(request);
 
         String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
@@ -82,48 +88,43 @@ public class GeminiProvider implements AIProvider {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
-        try {
-            String jsonResponse;
+        List<String> candidates = getModelCandidates(request.getRequestedModel());
+        for (String model : candidates) {
             try {
-                jsonResponse = webClient.post()
+                String jsonResponse = webClient.post()
                         .uri("models/" + model + ":generateContent?key=" + apiKey)
                         .bodyValue(body)
                         .retrieve()
                         .bodyToMono(String.class)
                         .block();
+
+                long latency = System.currentTimeMillis() - start;
+                JsonNode root = objectMapper.readTree(jsonResponse);
+
+                String content = extractTextFromGeminiNode(root);
+                int promptTokens = root.path("usageMetadata").path("promptTokenCount").asInt(0);
+                int candidatesTokens = root.path("usageMetadata").path("candidatesTokenCount").asInt(0);
+                int totalTokens = root.path("usageMetadata").path("totalTokenCount").asInt(0);
+
+                return AiResponse.builder()
+                        .id(UUID.randomUUID().toString())
+                        .content(content)
+                        .provider(getProviderName())
+                        .model(model)
+                        .usage(new AiUsage(promptTokens, candidatesTokens, totalTokens))
+                        .latencyMs(latency)
+                        .finishReason("STOP")
+                        .build();
+
             } catch (WebClientResponseException.NotFound ex) {
-                String fallbackModel = model.contains("flash") ? "gemini-2.0-flash" : "gemini-1.5-flash";
-                log.warn("Gemini model [{}] returned 404. Retrying with fallback model [{}]", model, fallbackModel);
-                jsonResponse = webClient.post()
-                        .uri("models/" + fallbackModel + ":generateContent?key=" + apiKey)
-                        .bodyValue(body)
-                        .retrieve()
-                        .bodyToMono(String.class)
-                        .block();
+                log.warn("Gemini model [{}] returned 404, trying next candidate...", model);
+            } catch (Exception e) {
+                log.error("Gemini execution error on model [{}]: {}", model, e.getMessage());
+                throw new AIProviderUnavailableException(getProviderName(), e.getMessage());
             }
-
-            long latency = System.currentTimeMillis() - start;
-            JsonNode root = objectMapper.readTree(jsonResponse);
-
-            String content = extractTextFromGeminiNode(root);
-            int promptTokens = root.path("usageMetadata").path("promptTokenCount").asInt(0);
-            int candidatesTokens = root.path("usageMetadata").path("candidatesTokenCount").asInt(0);
-            int totalTokens = root.path("usageMetadata").path("totalTokenCount").asInt(0);
-
-            return AiResponse.builder()
-                    .id(UUID.randomUUID().toString())
-                    .content(content)
-                    .provider(getProviderName())
-                    .model(model)
-                    .usage(new AiUsage(promptTokens, candidatesTokens, totalTokens))
-                    .latencyMs(latency)
-                    .finishReason("STOP")
-                    .build();
-
-        } catch (Exception e) {
-            log.error("Gemini API execution error: {}", e.getMessage());
-            throw new AIProviderUnavailableException(getProviderName(), e.getMessage());
         }
+
+        throw new AIProviderUnavailableException(getProviderName(), "No valid Gemini models found for configured key.");
     }
 
     @Override
@@ -133,7 +134,6 @@ public class GeminiProvider implements AIProvider {
             return Flux.error(new AIProviderUnavailableException(getProviderName(), "Google Gemini API Key is missing. Please enter your key in settings or .env."));
         }
 
-        String model = resolveModel(request.getRequestedModel());
         Map<String, Object> body = buildRequestBody(request);
 
         String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
@@ -142,6 +142,16 @@ public class GeminiProvider implements AIProvider {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
+        List<String> candidates = getModelCandidates(request.getRequestedModel());
+        return streamWithCandidates(webClient, candidates, 0, apiKey, body);
+    }
+
+    private Flux<String> streamWithCandidates(WebClient webClient, List<String> candidates, int index, String apiKey, Map<String, Object> body) {
+        if (index >= candidates.size()) {
+            return Flux.error(new AIProviderUnavailableException(getProviderName(), "No valid Gemini models found for API key. Please check your key in settings."));
+        }
+
+        String model = candidates.get(index);
         return webClient.post()
                 .uri("models/" + model + ":streamGenerateContent?alt=sse&key=" + apiKey)
                 .bodyValue(body)
@@ -151,16 +161,8 @@ public class GeminiProvider implements AIProvider {
                 .map(this::extractDeltaToken)
                 .filter(token -> !token.isEmpty())
                 .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
-                    String fallbackModel = model.contains("flash") ? "gemini-2.0-flash" : "gemini-1.5-flash";
-                    log.warn("Gemini model [{}] returned 404. Retrying with fallback model [{}]", model, fallbackModel);
-                    return webClient.post()
-                            .uri("models/" + fallbackModel + ":streamGenerateContent?alt=sse&key=" + apiKey)
-                            .bodyValue(body)
-                            .accept(MediaType.TEXT_EVENT_STREAM)
-                            .retrieve()
-                            .bodyToFlux(String.class)
-                            .map(this::extractDeltaToken)
-                            .filter(token -> !token.isEmpty());
+                    log.warn("Gemini model [{}] returned 404. Retrying with candidate index [{}]...", model, index + 1);
+                    return streamWithCandidates(webClient, candidates, index + 1, apiKey, body);
                 });
     }
 
