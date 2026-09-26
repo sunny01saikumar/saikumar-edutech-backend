@@ -74,11 +74,6 @@ public class GeminiProvider implements AIProvider {
 
     private List<String> discoverAvailableModels(WebClient webClient, String apiKey, String preferredModel) {
         List<String> discovered = new ArrayList<>();
-        if (preferredModel != null && !preferredModel.trim().isEmpty()
-                && !preferredModel.equalsIgnoreCase("default")
-                && !preferredModel.equalsIgnoreCase("default model")) {
-            discovered.add(preferredModel.trim().replace("models/", ""));
-        }
 
         try {
             String json = webClient.get()
@@ -94,6 +89,12 @@ public class GeminiProvider implements AIProvider {
                         String name = m.path("name").asText("");
                         if (name.startsWith("models/")) {
                             name = name.substring(7);
+                        }
+                        String lower = name.toLowerCase();
+                        if (lower.contains("tts") || lower.contains("embedding") || lower.contains("imagen")
+                                || lower.contains("audio") || lower.contains("aqa") || lower.contains("bison")
+                                || lower.contains("gecko") || lower.contains("realtime")) {
+                            continue;
                         }
                         JsonNode methods = m.path("supportedGenerationMethods");
                         boolean supportsGen = false;
@@ -121,10 +122,37 @@ public class GeminiProvider implements AIProvider {
             log.warn("Failed to dynamically fetch Gemini models: {}", e.getMessage());
         }
 
-        if (discovered.isEmpty()) {
-            return getModelCandidates(preferredModel);
+        List<String> prioritized = new ArrayList<>();
+        if (preferredModel != null && !preferredModel.trim().isEmpty()
+                && !preferredModel.equalsIgnoreCase("default")
+                && !preferredModel.equalsIgnoreCase("default model")) {
+            prioritized.add(preferredModel.trim().replace("models/", ""));
         }
-        return discovered;
+
+        List<String> flagshipDefaults = List.of(
+            "gemini-1.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-pro",
+            "gemini-2.0-flash-lite",
+            "gemini-1.5-flash-8b",
+            "gemini-pro"
+        );
+        for (String f : flagshipDefaults) {
+            if (discovered.contains(f) && !prioritized.contains(f)) {
+                prioritized.add(f);
+            }
+        }
+        for (String d : discovered) {
+            if (!prioritized.contains(d)) {
+                prioritized.add(d);
+            }
+        }
+        for (String f : flagshipDefaults) {
+            if (!prioritized.contains(f)) {
+                prioritized.add(f);
+            }
+        }
+        return prioritized;
     }
 
     @Override
@@ -171,8 +199,8 @@ public class GeminiProvider implements AIProvider {
                         .finishReason("STOP")
                         .build();
 
-            } catch (WebClientResponseException.NotFound ex) {
-                log.warn("Gemini model [{}] returned 404, trying next candidate...", model);
+            } catch (WebClientResponseException ex) {
+                log.warn("Gemini model [{}] returned HTTP {}, trying next candidate...", model, ex.getStatusCode());
             } catch (Exception e) {
                 log.error("Gemini execution error on model [{}]: {}", model, e.getMessage());
                 throw new AIProviderUnavailableException(getProviderName(), e.getMessage());
@@ -220,8 +248,8 @@ public class GeminiProvider implements AIProvider {
                 .bodyToFlux(String.class)
                 .map(this::extractDeltaToken)
                 .filter(token -> !token.isEmpty())
-                .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
-                    log.warn("Gemini model [{}] returned 404. Retrying with candidate index [{}]...", model, index + 1);
+                .onErrorResume(WebClientResponseException.class, ex -> {
+                    log.warn("Gemini model [{}] failed with HTTP {}. Retrying with candidate index [{}]...", model, ex.getStatusCode(), index + 1);
                     return streamWithCandidates(webClient, candidates, index + 1, apiKey, body);
                 });
     }
