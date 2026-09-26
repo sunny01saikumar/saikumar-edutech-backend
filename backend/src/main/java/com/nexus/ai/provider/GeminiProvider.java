@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 
 import java.util.*;
@@ -55,6 +56,15 @@ public class GeminiProvider implements AIProvider {
         return envApiKey;
     }
 
+    private String resolveModel(String requestedModel) {
+        if (requestedModel == null || requestedModel.trim().isEmpty()
+                || requestedModel.equalsIgnoreCase("default")
+                || requestedModel.equalsIgnoreCase("default model")) {
+            return "gemini-1.5-flash";
+        }
+        return requestedModel.trim();
+    }
+
     @Override
     public AiResponse generate(AiRequest request) {
         String apiKey = getEffectiveKey(request);
@@ -63,9 +73,7 @@ public class GeminiProvider implements AIProvider {
         }
 
         long start = System.currentTimeMillis();
-        String model = (request.getRequestedModel() != null && !request.getRequestedModel().isEmpty())
-                ? request.getRequestedModel() : defaultModel;
-
+        String model = resolveModel(request.getRequestedModel());
         Map<String, Object> body = buildRequestBody(request);
 
         WebClient webClient = webClientBuilder.baseUrl(baseUrl)
@@ -73,12 +81,24 @@ public class GeminiProvider implements AIProvider {
                 .build();
 
         try {
-            String jsonResponse = webClient.post()
-                    .uri("/models/" + model + ":generateContent?key=" + apiKey)
-                    .bodyValue(body)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+            String jsonResponse;
+            try {
+                jsonResponse = webClient.post()
+                        .uri("/models/" + model + ":generateContent?key=" + apiKey)
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+            } catch (WebClientResponseException.NotFound ex) {
+                String fallbackModel = model.contains("flash") ? "gemini-1.5-pro" : "gemini-1.5-flash";
+                log.warn("Gemini model [{}] returned 404. Retrying with fallback model [{}]", model, fallbackModel);
+                jsonResponse = webClient.post()
+                        .uri("/models/" + fallbackModel + ":generateContent?key=" + apiKey)
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+            }
 
             long latency = System.currentTimeMillis() - start;
             JsonNode root = objectMapper.readTree(jsonResponse);
@@ -111,9 +131,7 @@ public class GeminiProvider implements AIProvider {
             return Flux.error(new AIProviderUnavailableException(getProviderName(), "Google Gemini API Key is missing. Please enter your key in settings or .env."));
         }
 
-        String model = (request.getRequestedModel() != null && !request.getRequestedModel().isEmpty())
-                ? request.getRequestedModel() : defaultModel;
-
+        String model = resolveModel(request.getRequestedModel());
         Map<String, Object> body = buildRequestBody(request);
 
         WebClient webClient = webClientBuilder.baseUrl(baseUrl)
@@ -127,7 +145,19 @@ public class GeminiProvider implements AIProvider {
                 .retrieve()
                 .bodyToFlux(String.class)
                 .map(this::extractDeltaToken)
-                .filter(token -> !token.isEmpty());
+                .filter(token -> !token.isEmpty())
+                .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
+                    String fallbackModel = model.contains("flash") ? "gemini-1.5-pro" : "gemini-1.5-flash";
+                    log.warn("Gemini model [{}] returned 404. Retrying with fallback model [{}]", model, fallbackModel);
+                    return webClient.post()
+                            .uri("/models/" + fallbackModel + ":streamGenerateContent?alt=sse&key=" + apiKey)
+                            .bodyValue(body)
+                            .accept(MediaType.TEXT_EVENT_STREAM)
+                            .retrieve()
+                            .bodyToFlux(String.class)
+                            .map(this::extractDeltaToken)
+                            .filter(token -> !token.isEmpty());
+                });
     }
 
     private String extractDeltaToken(String sseLine) {
