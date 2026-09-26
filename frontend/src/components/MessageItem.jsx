@@ -16,6 +16,8 @@ function preprocessMarkdown(text) {
   content = content.replace(/Formatting Rules:.*?\n/gsi, '');
   content = content.replace(/^User question:.*?\n/gsi, '');
   content = content.replace(/^Persona requirements:.*?\n/gsi, '');
+  content = content.replace(/Use (code|Copy code|##|###|\*|\-|\w+)+ (for main headings|for subheadings|for bullet points|for lists|for workflow representation)/gsi, '');
+  content = content.replace(/\*\s*Use\s+code\s+Copy code.*?\n/gsi, '\n');
 
   // 2. Convert LaTeX arrows to clean Unicode
   content = content
