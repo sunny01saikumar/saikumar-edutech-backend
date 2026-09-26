@@ -4,6 +4,34 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { User, Cpu, Copy, Check, Clock, Zap } from 'lucide-react';
 
+function preprocessMarkdown(text) {
+  if (!text) return '';
+  let content = text;
+
+  // 1. Convert raw LaTeX arrows and math symbols to clean Unicode
+  content = content
+    .replace(/\\rightarrow|\$\\rightarrow\$|\$\\to\$|\\to/g, '→')
+    .replace(/\\leftarrow|\$\\leftarrow\$/g, '←')
+    .replace(/\\Rightarrow|\$\\Rightarrow\$/g, '⇒')
+    .replace(/\\Leftrightarrow|\$\\Leftrightarrow\$/g, '⇔')
+    .replace(/\\in|\$\\in\$/g, '∈');
+
+  // 2. Expand squashed list items (* item 1 * item 2) into clean newline lists
+  content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'])/g, '$1\n\n* $2');
+
+  // 3. Expand squashed numbered lists (1. item 1 2. item 2) into clean newline lists
+  content = content.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'])/g, '$1\n\n$2');
+
+  // 4. Expand squashed Markdown headers (text### 1. Section)
+  content = content.replace(/([^\n])\s*(#{1,6}\s+)/g, '$1\n\n$2');
+  content = content.replace(/---\s*(#{1,6}\s+)/g, '\n---\n\n$1');
+
+  // 5. Ensure code blocks always start on a fresh new line
+  content = content.replace(/([^\n])(```\w*)/g, '$1\n$2');
+
+  return content;
+}
+
 export default function MessageItem({ message, isStreaming }) {
   const isUser = message.role === 'USER' || message.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -13,6 +41,8 @@ export default function MessageItem({ message, isStreaming }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const processedContent = isUser ? message.content : preprocessMarkdown(message.content);
 
   return (
     <div className={`py-5 px-4 md:px-6 transition-colors ${isUser ? 'bg-transparent' : 'bg-[#0F1424]/60 border-y border-gray-800/40'}`}>
@@ -62,7 +92,7 @@ export default function MessageItem({ message, isStreaming }) {
           </div>
 
           {/* Markdown Content */}
-          <div className="text-gray-200 text-sm leading-relaxed prose prose-invert max-w-none prose-pre:p-0 prose-pre:bg-transparent">
+          <div className="markdown-content">
             {isUser ? (
               <p className="whitespace-pre-wrap text-gray-100">{message.content}</p>
             ) : (
@@ -103,7 +133,7 @@ export default function MessageItem({ message, isStreaming }) {
                   }
                 }}
               >
-                {message.content}
+                {processedContent}
               </ReactMarkdown>
             )}
 
