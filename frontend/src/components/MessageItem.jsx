@@ -8,16 +8,19 @@ function preprocessMarkdown(text) {
   if (!text) return '';
   let content = text;
 
-  // 1. Strip drafting notes, self-corrections, and meta-rule blocks if emitted by LLMs
+  // 1. Strip drafting notes, self-corrections, checklist confirmations, and meta-rule blocks
   content = content.replace(/\*?\s*\*?Self-Correction during drafting:.*?\n\n/gsi, '');
   content = content.replace(/\*?\s*\*?Drafting Step \d+:.*?\n/gsi, '\n');
-  content = content.replace(/\*?\s*\*?Heading:\s*/gsi, '');
+  content = content.replace(/\*?\s*\*?Heading \d*:\s*/gsi, '');
   content = content.replace(/Constraints\/Persona:.*?\n/gsi, '');
   content = content.replace(/Formatting Rules:.*?\n/gsi, '');
   content = content.replace(/^User question:.*?\n/gsi, '');
   content = content.replace(/^Persona requirements:.*?\n/gsi, '');
   content = content.replace(/Use (code|Copy code|##|###|\*|\-|\w+)+ (for main headings|for subheadings|for bullet points|for lists|for workflow representation)/gsi, '');
   content = content.replace(/\*\s*Use\s+code\s+Copy code.*?\n/gsi, '\n');
+  content = content.replace(/\*\s*\*?NEXUS AI persona\?.*?\n/gsi, '');
+  content = content.replace(/\*\s*\*?(Comprehensive|Topic-by-topic|Clear headings|Bullet points|Code in language-tagged|No meta\/system notes)\?.*?\n/gsi, '');
+  content = content.replace(/Bullet:\s*/gsi, '* ');
 
   // 2. Fix inline list squashing (convert inline '* Item' into clean fresh-line lists)
   content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'\(\[\{])/g, '$1\n\n* $2');
