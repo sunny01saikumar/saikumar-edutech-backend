@@ -61,75 +61,68 @@ body {
 }
 
 .markdown-content h1 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #F8FAFC;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.4rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   letter-spacing: -0.01em;
 }
 
 .markdown-content h2 {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #F3F4F6;
-  margin-top: 1.35rem;
-  margin-bottom: 0.65rem;
-  padding-bottom: 0.35rem;
+  margin-top: 1.15rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.3rem;
   border-bottom: 1px solid rgba(99, 102, 241, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .markdown-content h3 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: #E0E7FF;
-  margin-top: 1.1rem;
-  margin-bottom: 0.55rem;
-}
-
-.markdown-content h4 {
-  font-size: 0.975rem;
-  font-weight: 600;
-  color: #A5B4FC;
-  margin-top: 0.9rem;
+  margin-top: 1rem;
   margin-bottom: 0.45rem;
 }
 
+.markdown-content h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #A5B4FC;
+  margin-top: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
 .markdown-content p {
-  margin-top: 0.7rem;
-  margin-bottom: 0.7rem;
+  margin-top: 0.6rem;
+  margin-bottom: 0.6rem;
   color: #D1D5DB;
-  leading: 1.75;
+  line-height: 1.7;
 }
 
 .markdown-content ul {
   list-style-type: disc;
-  padding-left: 1.5rem;
-  margin-top: 0.6rem;
-  margin-bottom: 0.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  padding-left: 1.4rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .markdown-content ol {
   list-style-type: decimal;
-  padding-left: 1.5rem;
-  margin-top: 0.6rem;
-  margin-bottom: 0.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  padding-left: 1.4rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .markdown-content li {
   color: #E5E7EB;
-  line-height: 1.65;
+  line-height: 1.6;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 
 .markdown-content li strong, .markdown-content p strong {

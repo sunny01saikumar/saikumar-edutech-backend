@@ -8,35 +8,20 @@ function preprocessMarkdown(text) {
   if (!text) return '';
   let content = text;
 
-  // 1. Strip leading echoed system instructions/prompts if leaked by model
-  content = content.replace(/^User question:.*?\n\n/is, '');
-  content = content.replace(/^Persona requirements:.*?\n\n/is, '');
-  content = content.replace(/^Definition:.*?\n\n/is, '');
+  // 1. Strip drafting notes, self-corrections, and meta-rule blocks if emitted by LLMs
+  content = content.replace(/\*?\s*\*?Self-Correction during drafting:.*?\n\n/gsi, '');
+  content = content.replace(/\*?\s*\*?Drafting Step \d+:.*?\n/gsi, '\n');
+  content = content.replace(/\*?\s*\*?Heading:\s*/gsi, '');
+  content = content.replace(/Constraints\/Persona:.*?\n/gsi, '');
+  content = content.replace(/Formatting Rules:.*?\n/gsi, '');
+  content = content.replace(/^User question:.*?\n/gsi, '');
+  content = content.replace(/^Persona requirements:.*?\n/gsi, '');
 
-  // 2. Convert raw LaTeX arrows and math symbols to clean Unicode
+  // 2. Convert LaTeX arrows to clean Unicode
   content = content
-    .replace(/\\rightarrow|\$\\rightarrow\$|\$\\to\$|\\to/g, '→')
-    .replace(/\\leftarrow|\$\\leftarrow\$/g, '←')
-    .replace(/\\Rightarrow|\$\\Rightarrow\$/g, '⇒')
-    .replace(/\\Leftrightarrow|\$\\Leftrightarrow\$/g, '⇔')
-    .replace(/\\in|\$\\in\$/g, '∈');
-
-  // 3. Convert inline heading phrases (e.g. "Code ExampleHere is" or "Explanation of the Code:") to proper Markdown headings
-  content = content.replace(/Code Example\s*/gi, '\n\n### Code Example\n\n');
-  content = content.replace(/Explanation of the Code:\s*/gi, '\n\n### Explanation of the Code\n\n');
-
-  // 4. Expand squashed list items (* item 1 * item 2) into clean newline lists
-  content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'])/g, '$1\n\n* $2');
-
-  // 5. Expand squashed numbered lists (1. item 1 2. item 2) into clean newline lists
-  content = content.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'])/g, '$1\n\n$2');
-
-  // 6. Expand squashed Markdown headers (text### 1. Section)
-  content = content.replace(/([^\n])\s*(#{1,6}\s+)/g, '$1\n\n$2');
-  content = content.replace(/---\s*(#{1,6}\s+)/g, '\n---\n\n$1');
-
-  // 7. Ensure code blocks always start on a fresh new line
-  content = content.replace(/([^\n])(```\w*)/g, '$1\n$2');
+    .replace(/\\rightarrow|\$\s*\\rightarrow\s*\$|\$\s*\\to\s*\$|\\to/g, '→')
+    .replace(/\\leftarrow|\$\s*\\leftarrow\s*\$/g, '←')
+    .replace(/\\Rightarrow|\$\s*\\Rightarrow\s*\$/g, '⇒');
 
   return content.trim();
 }
@@ -107,14 +92,16 @@ export default function MessageItem({ message, isStreaming }) {
                   code({ node, inline, className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || '');
                     const codeString = String(children).replace(/\n$/, '');
+                    const isBlock = !inline || codeString.includes('\n');
 
-                    if (!inline && match) {
+                    if (isBlock) {
+                      const lang = match ? match[1] : 'code';
                       return (
                         <div className="relative group rounded-xl overflow-hidden border border-gray-700 bg-[#0F1424] my-4 shadow-xl">
-                          <div className="flex items-center justify-between px-4 py-2 bg.gray-900/90 border-b border-gray-800 text-xs text-gray-300 font-mono">
+                          <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800 text-xs text-gray-300 font-mono">
                             <span className="text-cyan-400 uppercase font-semibold tracking-wider flex items-center gap-1.5">
                               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                              {match[1]}
+                              {lang}
                             </span>
                             <button
                               onClick={() => handleCopy(codeString)}
