@@ -8,16 +8,16 @@ RUN npm run build
 
 # Stage 2: Build Spring Boot Backend with Static Frontend Assets
 FROM eclipse-temurin:21-jdk-alpine AS backend-builder
+RUN apk add --no-cache maven
 WORKDIR /app
-COPY backend/pom.xml backend/mvnw backend/mvnw.cmd ./backend/
-COPY backend/.mvn ./backend/.mvn
+COPY backend/pom.xml ./backend/
 COPY backend/src ./backend/src
 
 # Copy static frontend build output into Spring Boot static resources
 COPY --from=frontend-builder /app/frontend/dist ./backend/src/main/resources/static
 
 WORKDIR /app/backend
-RUN ./mvnw package -DskipTests
+RUN mvn package -DskipTests
 
 # Stage 3: Production Runtime
 FROM eclipse-temurin:21-jre-alpine
