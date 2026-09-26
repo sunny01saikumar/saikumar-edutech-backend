@@ -1,0 +1,29 @@
+# Secrets & Env
+.env
+*.env
+!.env.example
+
+# Database & Storage
+data/
+*.db
+*.mv.db
+*.trace.db
+
+# Backend Build & IDE
+backend/target/
+backend/.project
+backend/.classpath
+backend/.settings/
+backend/.idea/
+backend/*.iml
+
+# Frontend Build & IDE
+frontend/node_modules/
+frontend/dist/
+frontend/.idea/
+frontend/*.iml
+
+# Antigravity & OS
+.DS_Store
+Thumbs.db
+.gemini/

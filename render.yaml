@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: nexus-ai-platform
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash

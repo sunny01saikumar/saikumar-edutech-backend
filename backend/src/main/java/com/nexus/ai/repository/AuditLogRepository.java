@@ -1,0 +1,13 @@
+package com.nexus.ai.repository;
+
+import com.nexus.ai.domain.AuditLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface AuditLogRepository extends JpaRepository<AuditLog, String> {
+    List<AuditLog> findTop100ByOrderByTimestampDesc();
+    List<AuditLog> findByTraceId(String traceId);
+}
