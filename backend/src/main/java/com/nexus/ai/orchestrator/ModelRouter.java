@@ -32,10 +32,36 @@ public class ModelRouter {
     }
 
     public RouteDecision route(String prompt, String requestedProvider, String requestedModel) {
+        return route(prompt, requestedProvider, requestedModel, null);
+    }
+
+    public RouteDecision route(String prompt, String requestedProvider, String requestedModel, String customApiKey) {
         // If explicit provider requested, try to use it
         if (requestedProvider != null && !requestedProvider.isEmpty() && !requestedProvider.equalsIgnoreCase("auto")) {
             AIProvider provider = providerRegistry.getProvider(requestedProvider);
             return new RouteDecision(provider, requestedModel, "explicit");
+        }
+
+        // Intelligent Auto Router: Match key pattern if customApiKey is provided
+        if (customApiKey != null && !customApiKey.trim().isEmpty()) {
+            String key = customApiKey.trim();
+            if (key.startsWith("AIza")) {
+                AIProvider gemini = providerRegistry.getProvider("gemini");
+                String model = (requestedModel != null && !requestedModel.isEmpty()) ? requestedModel : "gemini-1.5-flash";
+                return new RouteDecision(gemini, model, "custom-key-auto");
+            } else if (key.startsWith("sk-ant")) {
+                AIProvider anthropic = providerRegistry.getProvider("anthropic");
+                String model = (requestedModel != null && !requestedModel.isEmpty()) ? requestedModel : "claude-3-5-sonnet-20241022";
+                return new RouteDecision(anthropic, model, "custom-key-auto");
+            } else if (key.startsWith("sk-")) {
+                AIProvider openai = providerRegistry.getProvider("openai");
+                String model = (requestedModel != null && !requestedModel.isEmpty()) ? requestedModel : "gpt-4o-mini";
+                return new RouteDecision(openai, model, "custom-key-auto");
+            } else {
+                AIProvider gemini = providerRegistry.getProvider("gemini");
+                String model = (requestedModel != null && !requestedModel.isEmpty()) ? requestedModel : "gemini-1.5-flash";
+                return new RouteDecision(gemini, model, "custom-key-auto");
+            }
         }
 
         AIProvider defaultProvider = providerRegistry.getDefaultProvider();

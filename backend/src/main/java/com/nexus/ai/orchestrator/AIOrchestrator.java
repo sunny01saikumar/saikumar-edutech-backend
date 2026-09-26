@@ -67,7 +67,7 @@ public class AIOrchestrator {
         String ragContext = ragService.retrieveRelevantContext(prompt);
 
         // 5. Model Routing
-        ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName);
+        ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
         AIProvider provider = route.getProvider();
 
         if (!provider.isAvailable() && (customApiKey == null || customApiKey.trim().isEmpty())) {
@@ -136,7 +136,7 @@ public class AIOrchestrator {
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
         String ragContext = ragService.retrieveRelevantContext(prompt);
-        ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName);
+        ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
         AIProvider provider = route.getProvider();
 
         if (!provider.isAvailable() && (customApiKey == null || customApiKey.trim().isEmpty())) {
