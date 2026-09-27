@@ -87,7 +87,7 @@ public class AIOrchestrator {
                 .requestedProvider(provider.getProviderName())
                 .requestedModel(route.getTargetModel())
                 .customApiKey(customApiKey)
-                .maxTokens(1000)
+                .maxTokens(4096)
                 .build();
 
         log.info("[Trace {}] Routing prompt to provider [{}] model [{}]", traceId, provider.getProviderName(), route.getTargetModel());
@@ -154,7 +154,7 @@ public class AIOrchestrator {
                 .requestedProvider(provider.getProviderName())
                 .requestedModel(route.getTargetModel())
                 .customApiKey(customApiKey)
-                .maxTokens(1000)
+                .maxTokens(4096)
                 .stream(true)
                 .build();
 
