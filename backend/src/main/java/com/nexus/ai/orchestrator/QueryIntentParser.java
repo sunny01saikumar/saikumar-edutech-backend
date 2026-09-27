@@ -141,49 +141,14 @@ public class QueryIntentParser {
 
     private String extractCleanKeywords(String raw) {
         if (raw == null) return "";
-        String cleaned = raw.trim()
+        return raw.trim()
                 .replaceAll("(?i)^(what is|what are|where is|where are|who is|who are|when is|when did|how is|how does|why is|why does|tell me about|explain|search web for|search for|information on)\\s+", "")
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
-
-        // Correct common name typos for robust search matching
-        cleaned = cleaned.replaceAll("(?i)\\bjoshep\\b", "Joseph")
-                         .replaceAll("(?i)\\bthoma\\b", "Thumma");
-        return cleaned;
     }
 
     private List<String> buildTargetedQueries(String keywords, QueryDomain domain, QuestionTag tag) {
-        List<String> queries = new ArrayList<>();
-        if (keywords.isEmpty()) return queries;
-
-        switch (domain) {
-            case COMPANY:
-                queries.add(keywords + " office headquarters location AmbitionBox Glassdoor");
-                queries.add(keywords + " company profile tech stack products careers");
-                break;
-            case PERSON:
-                queries.add(keywords);
-                queries.add(keywords + " biography profile background wikipedia news");
-                break;
-            case EDUCATION:
-                queries.add(keywords + " educational courses documentation research overview");
-                break;
-            case PLACE:
-                queries.add(keywords + " location geography state history significance");
-                break;
-            case GEOPOLITICS:
-                queries.add(keywords + " geopolitics international relations ongoing developments news");
-                break;
-            case SCIENCE_MYSTERY:
-                queries.add(keywords + " scientific facts theories peer reviewed debate");
-                break;
-            case LEGAL:
-                queries.add(keywords + " legal framework statutes regulation law overview");
-                break;
-            default:
-                queries.add(keywords);
-                break;
-        }
-        return queries;
+        if (keywords == null || keywords.isEmpty()) return List.of();
+        return List.of(keywords);
     }
 }
