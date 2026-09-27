@@ -29,6 +29,8 @@ public class AIOrchestrator {
     private final TraceService traceService;
     private final ToolRegistry toolRegistry;
     private final QuotaService quotaService;
+    private final com.nexus.ai.orchestrator.QueryIntentParser queryIntentParser;
+    private final com.nexus.ai.security.SecurityShield securityShield;
 
     public AIOrchestrator(ModelRouter modelRouter,
                           ContextWindowBuilder contextWindowBuilder,
@@ -36,7 +38,9 @@ public class AIOrchestrator {
                           RAGService ragService,
                           TraceService traceService,
                           ToolRegistry toolRegistry,
-                          QuotaService quotaService) {
+                          QuotaService quotaService,
+                          com.nexus.ai.orchestrator.QueryIntentParser queryIntentParser,
+                          com.nexus.ai.security.SecurityShield securityShield) {
         this.modelRouter = modelRouter;
         this.contextWindowBuilder = contextWindowBuilder;
         this.conversationService = conversationService;
@@ -44,36 +48,46 @@ public class AIOrchestrator {
         this.traceService = traceService;
         this.toolRegistry = toolRegistry;
         this.quotaService = quotaService;
+        this.queryIntentParser = queryIntentParser;
+        this.securityShield = securityShield;
     }
 
     private String gatherAndLearnContext(String prompt) {
         StringBuilder combinedContext = new StringBuilder();
 
+        // 0. Security Shield Prompt Sanitization
+        String safePrompt = securityShield.sanitizePrompt(prompt);
+
         // 1. Retrieve Existing RAG Vector Memory
-        String ragContext = ragService.retrieveRelevantContext(prompt);
+        String ragContext = ragService.retrieveRelevantContext(safePrompt);
         if (ragContext != null && !ragContext.trim().isEmpty()) {
             combinedContext.append(ragContext).append("\n\n");
         }
 
-        // 2. Perform Autonomous Multi-Source Search & Self-Learn
+        // 2. Intent Parsing & Domain-Targeted Multi-Platform Search Routing
         try {
+            com.nexus.ai.orchestrator.QueryIntentParser.ParsedIntent intent = queryIntentParser.parse(safePrompt);
             Tool webTool = toolRegistry.getTool("web_search");
-            if (webTool != null) {
-                ToolCall toolCall = webTool.execute(Map.of("query", prompt));
-                if (toolCall != null && toolCall.isSuccess() && toolCall.getResult() != null) {
-                    String searchResult = toolCall.getResult();
-                    if (!searchResult.contains("No direct web search results found")) {
-                        combinedContext.append("--- LIVE MULTI-SOURCE SEARCH DATA ---\n")
-                                .append(searchResult)
-                                .append("\n--------------------------------------\n");
+            if (webTool != null && intent != null && !intent.getTargetedSearchQueries().isEmpty()) {
+                for (String searchQuery : intent.getTargetedSearchQueries()) {
+                    ToolCall toolCall = webTool.execute(Map.of("query", searchQuery));
+                    if (toolCall != null && toolCall.isSuccess() && toolCall.getResult() != null) {
+                        String searchResult = toolCall.getResult();
+                        if (!searchResult.contains("No direct web search results found")) {
+                            combinedContext.append("--- TARGETED MULTI-SOURCE SEARCH DATA (Domain: ")
+                                    .append(intent.getDomain()).append(", Tag: ").append(intent.getQuestionTag()).append(") ---\n")
+                                    .append(searchResult)
+                                    .append("\n--------------------------------------\n");
 
-                        // Self-learn & index into RAG vector database for persistent memory
-                        ragService.indexTextKnowledge("Auto-Learned: " + prompt, searchResult);
+                            // Self-learn & index into RAG vector database for persistent memory
+                            ragService.indexTextKnowledge("Auto-Learned [" + intent.getDomain() + "]: " + intent.getCleanKeywords(), searchResult);
+                            break;
+                        }
                     }
                 }
             }
         } catch (Exception e) {
-            log.warn("Autonomous web search & self-learning warning: {}", e.getMessage());
+            log.warn("Autonomous domain web search & self-learning warning: {}", e.getMessage());
         }
 
         return combinedContext.toString().trim();

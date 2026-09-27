@@ -118,19 +118,24 @@ public class QuotaService {
 
     private synchronized UserSubscription createDefaultSubscription(String userId) {
         return userSubscriptionRepository.findByUserId(userId).orElseGet(() -> {
+            boolean isGuest = "default-user".equalsIgnoreCase(userId) || userId.startsWith("guest-");
+            int dailyLimit = isGuest ? 5000 : 20000;
+            int monthlyLimit = isGuest ? 150000 : 600000;
+            String plan = isGuest ? "GUEST" : "FREE_AUTH";
+
             try {
                 UserSubscription sub = UserSubscription.builder()
                         .userId(userId)
-                        .plan("FREE")
-                        .dailyTokenLimit(5000)
-                        .monthlyTokenLimit(150000)
+                        .plan(plan)
+                        .dailyTokenLimit(dailyLimit)
+                        .monthlyTokenLimit(monthlyLimit)
                         .status("ACTIVE")
                         .build();
                 return userSubscriptionRepository.save(sub);
             } catch (Exception e) {
                 log.warn("Concurrent subscription creation for user [{}], falling back to query", userId);
                 return userSubscriptionRepository.findByUserId(userId).orElseGet(() ->
-                        UserSubscription.builder().userId(userId).plan("FREE").dailyTokenLimit(5000).monthlyTokenLimit(150000).status("ACTIVE").build()
+                        UserSubscription.builder().userId(userId).plan(plan).dailyTokenLimit(dailyLimit).monthlyTokenLimit(monthlyLimit).status("ACTIVE").build()
                 );
             }
         });
