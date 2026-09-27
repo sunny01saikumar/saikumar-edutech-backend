@@ -180,7 +180,7 @@ export default function ChatView({
               </button>
 
               <button
-                onClick={() => handleSend('Tell me about the architecture of NEXUS AI')}
+                onClick={() => handleSend('Give a brief, high-level overview of NEXUS AI architecture in 3 simple points')}
                 className="p-3.5 rounded-xl glass-card hover:bg-emerald-950/40 border border-emerald-500/30 transition-all text-xs group"
               >
                 <div className="flex items-center gap-2 text-emerald-300 font-semibold mb-1">
@@ -188,7 +188,7 @@ export default function ChatView({
                   <span>Private AI Model</span>
                 </div>
                 <div className="text-gray-400 group-hover:text-emerald-200">
-                  "Tell me about NEXUS AI architecture"
+                  "Give a brief overview of NEXUS AI"
                 </div>
               </button>
             </div>
