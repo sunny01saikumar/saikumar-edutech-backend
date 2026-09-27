@@ -7,6 +7,7 @@ import com.nexus.ai.rag.RAGService;
 import com.nexus.ai.service.ConversationService;
 import com.nexus.ai.service.QuotaService;
 import com.nexus.ai.service.TraceService;
+import com.nexus.ai.tools.Tool;
 import com.nexus.ai.tools.ToolRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class AIOrchestrator {
@@ -44,6 +46,39 @@ public class AIOrchestrator {
         this.quotaService = quotaService;
     }
 
+    private String gatherAndLearnContext(String prompt) {
+        StringBuilder combinedContext = new StringBuilder();
+
+        // 1. Retrieve Existing RAG Vector Memory
+        String ragContext = ragService.retrieveRelevantContext(prompt);
+        if (ragContext != null && !ragContext.trim().isEmpty()) {
+            combinedContext.append(ragContext).append("\n\n");
+        }
+
+        // 2. Perform Autonomous Multi-Source Search & Self-Learn
+        try {
+            Tool webTool = toolRegistry.getTool("web_search");
+            if (webTool != null) {
+                ToolCall toolCall = webTool.execute(Map.of("query", prompt));
+                if (toolCall != null && toolCall.isSuccess() && toolCall.getResult() != null) {
+                    String searchResult = toolCall.getResult();
+                    if (!searchResult.contains("No direct web search results found")) {
+                        combinedContext.append("--- LIVE MULTI-SOURCE SEARCH DATA ---\n")
+                                .append(searchResult)
+                                .append("\n--------------------------------------\n");
+
+                        // Self-learn & index into RAG vector database for persistent memory
+                        ragService.indexTextKnowledge("Auto-Learned: " + prompt, searchResult);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Autonomous web search & self-learning warning: {}", e.getMessage());
+        }
+
+        return combinedContext.toString().trim();
+    }
+
     public AiResponse processChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt) {
         return processChat(prompt, conversationId, providerName, modelName, systemPrompt, null);
     }
@@ -53,20 +88,15 @@ public class AIOrchestrator {
         String traceId = traceService.createTraceId();
         String userId = "default-user";
 
-        // 1. Enforce Token Quota
         quotaService.checkAndEnforceQuota(userId);
 
-        // 2. Conversation setup
         Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt);
         String activeConvId = conversation.getId();
 
-        // 3. Save User Message
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
-        // 4. Retrieve RAG Document Context
-        String ragContext = ragService.retrieveRelevantContext(prompt);
+        String ragContext = gatherAndLearnContext(prompt);
 
-        // 5. Model Routing
         ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
         AIProvider provider = route.getProvider();
 
@@ -76,7 +106,6 @@ public class AIOrchestrator {
             throw new AIProviderUnavailableException(provider.getProviderName(), "Configured AI provider [" + provider.getProviderName() + "] is unavailable. Please enter an API key in settings.");
         }
 
-        // 6. Build Context Messages & System Prompt
         String fullSystemPrompt = contextWindowBuilder.buildSystemPrompt(systemPrompt, ragContext);
         List<AiRequest.ChatMessage> messages = contextWindowBuilder.buildContextMessages(activeConvId, prompt, fullSystemPrompt, ragContext);
 
@@ -92,7 +121,6 @@ public class AIOrchestrator {
 
         log.info("[Trace {}] Routing prompt to provider [{}] model [{}]", traceId, provider.getProviderName(), route.getTargetModel());
 
-        // 7. Execute REAL Model Call
         AiResponse response = provider.generate(request);
         response.setConversationId(activeConvId);
         response.setTraceId(traceId);
@@ -101,18 +129,14 @@ public class AIOrchestrator {
         response.setLatencyMs(latency);
 
         int totalTokens = response.getUsage() != null ? response.getUsage().getTotalTokens() : 100;
-        
-        // 8. Deduct Tokens from User Quota
         quotaService.deductTokens(userId, totalTokens > 0 ? totalTokens : 100);
 
-        // 9. Save Assistant Response to DB
         conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, response.getContent(),
                 provider.getProviderName(), route.getTargetModel(),
                 response.getUsage() != null ? response.getUsage().getPromptTokens() : 0,
                 response.getUsage() != null ? response.getUsage().getCompletionTokens() : 0,
                 latency);
 
-        // 10. Log Trace
         traceService.logTrace(traceId, activeConvId, "CHAT_REQUEST", provider.getProviderName(), route.getTargetModel(),
                 latency, response.getUsage() != null ? response.getUsage().getPromptTokens() : 0,
                 response.getUsage() != null ? response.getUsage().getCompletionTokens() : 0, "SUCCESS", "Response generated successfully");
@@ -128,7 +152,6 @@ public class AIOrchestrator {
         String traceId = traceService.createTraceId();
         String userId = "default-user";
 
-        // Enforce Token Quota
         quotaService.checkAndEnforceQuota(userId);
 
         Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt);
@@ -136,7 +159,7 @@ public class AIOrchestrator {
 
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
-        String ragContext = ragService.retrieveRelevantContext(prompt);
+        String ragContext = gatherAndLearnContext(prompt);
         ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
         AIProvider provider = route.getProvider();
 

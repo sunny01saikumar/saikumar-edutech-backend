@@ -69,6 +69,36 @@ public class RAGService {
         return doc;
     }
 
+    @Transactional
+    public Document indexTextKnowledge(String title, String content) {
+        if (content == null || content.trim().isEmpty()) return null;
+        log.info("Autonomous self-learning indexing: [{}]", title);
+
+        List<String> rawChunks = textChunker.chunkText(content);
+        Document doc = Document.builder()
+                .filename(title)
+                .fileType("text/auto-learning")
+                .fileSize((long) content.getBytes(java.nio.charset.StandardCharsets.UTF_8).length)
+                .totalChunks(rawChunks.size())
+                .build();
+
+        doc = documentRepository.save(doc);
+
+        List<DocumentChunk> entityChunks = new ArrayList<>();
+        for (int i = 0; i < rawChunks.size(); i++) {
+            DocumentChunk chunk = DocumentChunk.builder()
+                    .documentId(doc.getId())
+                    .chunkIndex(i)
+                    .content(rawChunks.get(i))
+                    .build();
+            entityChunks.add(chunk);
+        }
+
+        documentChunkRepository.saveAll(entityChunks);
+        log.info("Self-learned and indexed {} chunks for topic [{}]", entityChunks.size(), title);
+        return doc;
+    }
+
     public String retrieveRelevantContext(String query) {
         if (query == null || query.trim().isEmpty()) return "";
 
