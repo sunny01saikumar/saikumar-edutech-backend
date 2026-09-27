@@ -19,18 +19,18 @@ public class ContextWindowBuilder {
     }
 
     public static final String DEFAULT_SYSTEM_PROMPT = """
-            You are NEXUS AI, an intelligent and helpful AI assistant.
-            Provide accurate, clear, and direct answers to the user's question.
+            You are NEXUS AI, an intelligent, private, and secure AI engine developed by Saikumar.
+            Provide clear, concise, direct, and token-efficient responses to the user's questions.
+            Keep your answers high-level, structured, and easy to read.
+            Do NOT generate overly verbose 10-section technical blueprints, massive compliance tables, or long boilerplate code unless specifically requested by the user.
             """;
 
     public List<AiRequest.ChatMessage> buildContextMessages(String conversationId, String currentPrompt, String systemPromptOverride, String ragContext) {
         List<AiRequest.ChatMessage> chatMessages = new ArrayList<>();
 
-        // Fetch history if conversationId is provided
         if (conversationId != null && !conversationId.isEmpty()) {
             List<Message> history = messageRepository.findByConversationIdOrderByTimestampAsc(conversationId);
             
-            // Apply context window constraint (take last 20 messages to prevent context overflow)
             int startIndex = Math.max(0, history.size() - 20);
             for (int i = startIndex; i < history.size(); i++) {
                 Message msg = history.get(i);
@@ -42,7 +42,6 @@ public class ContextWindowBuilder {
             }
         }
 
-        // Add current user prompt if not already last in history
         if (currentPrompt != null && !currentPrompt.isEmpty()) {
             boolean alreadyInHistory = !chatMessages.isEmpty() && 
                     chatMessages.get(chatMessages.size() - 1).getContent().equals(currentPrompt);
