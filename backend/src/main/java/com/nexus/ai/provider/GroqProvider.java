@@ -97,6 +97,11 @@ public class GroqProvider implements AIProvider {
                 if (root.has("data") && root.get("data").isArray()) {
                     for (JsonNode m : root.get("data")) {
                         String id = m.path("id").asText("");
+                        String lower = id.toLowerCase();
+                        if (lower.contains("whisper") || lower.contains("audio") || lower.contains("embed")
+                                || lower.contains("tts") || lower.contains("guard") || lower.contains("vision")) {
+                            continue;
+                        }
                         if (!id.isEmpty() && !discovered.contains(id)) {
                             discovered.add(id);
                         }
@@ -109,7 +114,10 @@ public class GroqProvider implements AIProvider {
 
         List<String> prioritized = new ArrayList<>();
         if (preferredModel != null && !preferredModel.trim().isEmpty()) {
-            prioritized.add(preferredModel.trim());
+            String pTrim = preferredModel.trim();
+            if (!pTrim.toLowerCase().contains("whisper")) {
+                prioritized.add(pTrim);
+            }
         }
 
         List<String> popularDefaults = List.of(
@@ -195,7 +203,7 @@ public class GroqProvider implements AIProvider {
 
             } catch (WebClientResponseException ex) {
                 log.warn("Groq model [{}] returned HTTP {}: {}", model, ex.getStatusCode(), ex.getResponseBodyAsString());
-                if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
+                if (ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
                     String detail = parseErrorMessage(ex);
                     throw new AIProviderUnavailableException(getProviderName(), "Groq API Error (" + ex.getStatusCode().value() + "): " + detail);
                 }
@@ -225,7 +233,7 @@ public class GroqProvider implements AIProvider {
 
     private Flux<String> streamWithCandidates(WebClient webClient, List<String> candidates, int index, String apiKey, AiRequest request) {
         if (index >= candidates.size()) {
-            return Flux.error(new AIProviderUnavailableException(getProviderName(), "No valid Groq models available for API key."));
+            return Flux.error(new AIProviderUnavailableException(getProviderName(), "No valid Groq chat models available for API key."));
         }
 
         String model = candidates.get(index);
@@ -242,7 +250,7 @@ public class GroqProvider implements AIProvider {
                 .filter(token -> !token.isEmpty())
                 .onErrorResume(WebClientResponseException.class, ex -> {
                     log.warn("Groq model [{}] failed with HTTP {}: {}", model, ex.getStatusCode(), ex.getResponseBodyAsString());
-                    if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
+                    if (ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
                         String detail = parseErrorMessage(ex);
                         return Flux.error(new AIProviderUnavailableException(getProviderName(), "Groq API Error (" + ex.getStatusCode().value() + "): " + detail));
                     }
