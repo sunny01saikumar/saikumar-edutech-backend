@@ -101,24 +101,42 @@ public class QuotaService {
         return map;
     }
 
-    private UserSubscription createDefaultSubscription(String userId) {
-        UserSubscription sub = UserSubscription.builder()
-                .userId(userId)
-                .plan("FREE")
-                .dailyTokenLimit(5000)
-                .monthlyTokenLimit(150000)
-                .status("ACTIVE")
-                .build();
-        return userSubscriptionRepository.save(sub);
+    private synchronized UserSubscription createDefaultSubscription(String userId) {
+        return userSubscriptionRepository.findByUserId(userId).orElseGet(() -> {
+            try {
+                UserSubscription sub = UserSubscription.builder()
+                        .userId(userId)
+                        .plan("FREE")
+                        .dailyTokenLimit(5000)
+                        .monthlyTokenLimit(150000)
+                        .status("ACTIVE")
+                        .build();
+                return userSubscriptionRepository.save(sub);
+            } catch (Exception e) {
+                log.warn("Concurrent subscription creation for user [{}], falling back to query", userId);
+                return userSubscriptionRepository.findByUserId(userId).orElseGet(() ->
+                        UserSubscription.builder().userId(userId).plan("FREE").dailyTokenLimit(5000).monthlyTokenLimit(150000).status("ACTIVE").build()
+                );
+            }
+        });
     }
 
-    private TokenQuota createDefaultQuota(String userId) {
-        TokenQuota quota = TokenQuota.builder()
-                .userId(userId)
-                .tokensUsedToday(0)
-                .tokensUsedThisMonth(0)
-                .lastResetDate(LocalDate.now())
-                .build();
-        return tokenQuotaRepository.save(quota);
+    private synchronized TokenQuota createDefaultQuota(String userId) {
+        return tokenQuotaRepository.findByUserId(userId).orElseGet(() -> {
+            try {
+                TokenQuota quota = TokenQuota.builder()
+                        .userId(userId)
+                        .tokensUsedToday(0)
+                        .tokensUsedThisMonth(0)
+                        .lastResetDate(LocalDate.now())
+                        .build();
+                return tokenQuotaRepository.save(quota);
+            } catch (Exception e) {
+                log.warn("Concurrent quota creation for user [{}], falling back to query", userId);
+                return tokenQuotaRepository.findByUserId(userId).orElseGet(() ->
+                        TokenQuota.builder().userId(userId).tokensUsedToday(0).tokensUsedThisMonth(0).lastResetDate(LocalDate.now()).build()
+                );
+            }
+        });
     }
 }
