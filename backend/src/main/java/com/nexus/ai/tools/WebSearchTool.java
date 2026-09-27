@@ -46,19 +46,29 @@ public class WebSearchTool implements Tool {
         );
     }
 
+    private String extractCleanKeywords(String rawQuery) {
+        if (rawQuery == null) return "";
+        String cleaned = rawQuery.trim()
+                .replaceAll("(?i)^(what is the special of|what is the specialty of|what is|tell me about|explain|where is|who is|how does|what are the|search web for|search for|about|special of|specialty of)\\s+", "")
+                .replaceAll("[?!=.,\"]", "")
+                .trim();
+        return cleaned.isEmpty() ? rawQuery.trim() : cleaned;
+    }
+
     @Override
     public ToolCall execute(Map<String, Object> arguments) {
         long start = System.currentTimeMillis();
-        String query = String.valueOf(arguments.get("query"));
+        String rawQuery = String.valueOf(arguments.get("query"));
+        String cleanQuery = extractCleanKeywords(rawQuery);
 
         try {
-            String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            String encodedClean = URLEncoder.encode(cleanQuery, StandardCharsets.UTF_8);
             StringBuilder sb = new StringBuilder();
-            sb.append("Live Search Results for: ").append(query).append("\n\n");
+            sb.append("Live Search Results for: ").append(cleanQuery).append("\n\n");
 
             // 1. DuckDuckGo Instant Answer
             try {
-                String ddgUrl = "https://api.duckduckgo.com/?q=" + encoded + "&format=json&no_html=1&skip_disambig=1";
+                String ddgUrl = "https://api.duckduckgo.com/?q=" + encodedClean + "&format=json&no_html=1&skip_disambig=1";
                 String ddgJson = webClient.get()
                         .uri(ddgUrl)
                         .retrieve()
@@ -76,9 +86,10 @@ public class WebSearchTool implements Tool {
                 log.warn("DuckDuckGo search warning: {}", e.getMessage());
             }
 
-            // 2. Wikipedia Search
+            // 2. Wikipedia Search (Clean Keyword Search)
+            boolean wikiFound = false;
             try {
-                String wikipediaUrl = "https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch=" + encoded;
+                String wikipediaUrl = "https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch=" + encodedClean;
                 String wikiJson = webClient.get()
                         .uri(wikipediaUrl)
                         .retrieve()
@@ -89,6 +100,7 @@ public class WebSearchTool implements Tool {
                     JsonNode wikiRoot = objectMapper.readTree(wikiJson);
                     JsonNode search = wikiRoot.path("query").path("search");
                     if (search.isArray() && search.size() > 0) {
+                        wikiFound = true;
                         int count = 0;
                         for (JsonNode item : search) {
                             if (count++ >= 4) break;
@@ -103,8 +115,36 @@ public class WebSearchTool implements Tool {
                 log.warn("Wikipedia search warning: {}", e.getMessage());
             }
 
+            // Fallback Search if clean keyword returned nothing
+            if (!wikiFound && !cleanQuery.equalsIgnoreCase(rawQuery)) {
+                try {
+                    String encodedRaw = URLEncoder.encode(rawQuery, StandardCharsets.UTF_8);
+                    String fallbackUrl = "https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch=" + encodedRaw;
+                    String wikiJson = webClient.get()
+                            .uri(fallbackUrl)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .timeout(Duration.ofSeconds(4))
+                            .block();
+                    if (wikiJson != null) {
+                        JsonNode wikiRoot = objectMapper.readTree(wikiJson);
+                        JsonNode search = wikiRoot.path("query").path("search");
+                        if (search.isArray() && search.size() > 0) {
+                            int count = 0;
+                            for (JsonNode item : search) {
+                                if (count++ >= 3) break;
+                                String title = item.path("title").asText();
+                                String snippet = item.path("snippet").asText().replaceAll("<[^>]*>", "");
+                                sb.append("[").append(count).append("] ").append(title).append("\n");
+                                sb.append("    ").append(snippet).append("\n\n");
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+
             if (sb.length() < 35) {
-                sb.append("No direct web search results found for query: ").append(query);
+                sb.append("No direct web search results found for query: ").append(cleanQuery);
             }
 
             long latency = System.currentTimeMillis() - start;
