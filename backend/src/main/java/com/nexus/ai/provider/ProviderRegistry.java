@@ -36,36 +36,31 @@ public class ProviderRegistry {
     }
 
     public AIProvider getDefaultProvider() {
-        // Priority 1: Gemini if available
-        AIProvider gemini = providers.get("gemini");
-        if (gemini != null && gemini.isAvailable()) return gemini;
-
-        // Priority 2: OpenAI if available
-        AIProvider openai = providers.get("openai");
-        if (openai != null && openai.isAvailable()) return openai;
-
-        // Priority 3: Anthropic if available
-        AIProvider anthropic = providers.get("anthropic");
-        if (anthropic != null && anthropic.isAvailable()) return anthropic;
-
-        // Priority 4: Configured default (e.g. Ollama) if available
+        // Priority 1: Configured default provider (Ollama / Local Engine)
         AIProvider configured = providers.get(configuredDefaultProvider.toLowerCase());
-        if (configured != null && configured.isAvailable()) {
+        if (configured != null) {
             return configured;
         }
 
-        // Priority 5: Fallback search to any available provider
+        // Priority 2: Fallback search to any registered provider
+        AIProvider ollama = providers.get("ollama");
+        if (ollama != null) return ollama;
+
+        AIProvider gemini = providers.get("gemini");
+        if (gemini != null && gemini.isAvailable()) return gemini;
+
+        AIProvider openai = providers.get("openai");
+        if (openai != null && openai.isAvailable()) return openai;
+
+        AIProvider anthropic = providers.get("anthropic");
+        if (anthropic != null && anthropic.isAvailable()) return anthropic;
+
         for (AIProvider p : providers.values()) {
-            if (p.isAvailable()) {
-                return p;
-            }
+            return p;
         }
 
-        // Default to Gemini so users can pass runtime custom API keys
-        if (gemini != null) return gemini;
-
         throw new AIProviderUnavailableException(configuredDefaultProvider,
-                "No AI provider is configured or available. Please configure an API key (OpenAI, Anthropic, Gemini) or run a local Ollama instance.");
+                "No AI provider is configured or available.");
     }
 
     public Map<String, Object> getProviderStatusMap() {
