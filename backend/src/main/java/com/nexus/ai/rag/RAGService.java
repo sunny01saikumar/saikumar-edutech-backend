@@ -91,8 +91,13 @@ public class RAGService {
     @Transactional
     public Document indexTextKnowledge(String title, String content) {
         if (content == null || content.trim().isEmpty()) return null;
-        if (content.contains("No direct web search results found") || content.contains("is not globally indexed") || content.contains("Warangal district")) {
-            return null; // Reject bad/hallucinated text from vector store
+        String lower = content.toLowerCase();
+        if (lower.contains("no direct web search results found") ||
+            lower.contains("is not globally indexed") ||
+            lower.contains("cat vamsi") ||
+            lower.contains("bookmyshow") ||
+            lower.contains("warangal district")) {
+            return null; // Reject contaminated/hallucinated text from vector store
         }
 
         log.info("Autonomous self-learning indexing: [{}]", title);
