@@ -14,7 +14,7 @@ import { fetchConversations, fetchProviders, deleteConversation } from './api/cl
 export default function App() {
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
-  const [provider, setProvider] = useState('ollama');
+  const [provider, setProvider] = useState('auto');
   const [model, setModel] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [providerInfo, setProviderInfo] = useState(null);

@@ -36,24 +36,29 @@ public class ProviderRegistry {
     }
 
     public AIProvider getDefaultProvider() {
-        // Priority 1: Configured default provider (Ollama / Local Engine)
+        // Priority 1: Configured default provider (e.g. Gemini if AI_PROVIDER=gemini)
         AIProvider configured = providers.get(configuredDefaultProvider.toLowerCase());
-        if (configured != null) {
+        if (configured != null && configured.isAvailable()) {
             return configured;
         }
 
-        // Priority 2: Fallback search to any registered provider
-        AIProvider ollama = providers.get("ollama");
-        if (ollama != null) return ollama;
-
+        // Priority 2: Gemini if available
         AIProvider gemini = providers.get("gemini");
         if (gemini != null && gemini.isAvailable()) return gemini;
 
+        // Priority 3: OpenAI if available
         AIProvider openai = providers.get("openai");
         if (openai != null && openai.isAvailable()) return openai;
 
+        // Priority 4: Anthropic if available
         AIProvider anthropic = providers.get("anthropic");
         if (anthropic != null && anthropic.isAvailable()) return anthropic;
+
+        // Priority 5: Fallback to configured or Ollama
+        if (configured != null) return configured;
+
+        AIProvider ollama = providers.get("ollama");
+        if (ollama != null) return ollama;
 
         for (AIProvider p : providers.values()) {
             return p;
