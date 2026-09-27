@@ -49,7 +49,6 @@ export default function App() {
     try {
       if (!currentUser) {
         setConversations([]);
-        setActiveConversationId(null);
         return [];
       }
       const data = await fetchConversations();

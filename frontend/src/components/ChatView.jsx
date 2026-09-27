@@ -25,11 +25,15 @@ export default function ChatView({
   const abortControllerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  const prevConvIdRef = useRef(conversationId);
   useEffect(() => {
-    if (conversationId && !isGenerating && messages.length === 0) {
-      loadConversationMessages(conversationId);
-    } else if (!conversationId && !isGenerating) {
-      setMessages([]);
+    if (prevConvIdRef.current !== conversationId) {
+      if (conversationId && !isGenerating) {
+        loadConversationMessages(conversationId);
+      } else if (!conversationId && !isGenerating) {
+        setMessages([]);
+      }
+      prevConvIdRef.current = conversationId;
     }
     setConfigError(null);
   }, [conversationId]);
@@ -108,10 +112,7 @@ export default function ChatView({
           return '';
         });
         if (onRefreshConversations) {
-          const list = await onRefreshConversations();
-          if (!conversationId && list && list.length > 0 && setConversationId) {
-            setConversationId(list[0].id);
-          }
+          await onRefreshConversations();
         }
         if (onRefreshUsage) onRefreshUsage();
       }
