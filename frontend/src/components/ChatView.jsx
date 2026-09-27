@@ -180,15 +180,15 @@ export default function ChatView({
               </button>
 
               <button
-                onClick={onOpenGuide}
-                className="p-3.5 rounded-xl glass-card hover:bg-indigo-950/40 border border-indigo-500/30 transition-all text-xs group"
+                onClick={() => handleSend('Tell me about the architecture of NEXUS AI')}
+                className="p-3.5 rounded-xl glass-card hover:bg-emerald-950/40 border border-emerald-500/30 transition-all text-xs group"
               >
-                <div className="flex items-center gap-2 text-indigo-300 font-semibold mb-1">
-                  <FileText className="w-4 h-4" />
-                  <span>Setup Free Gemini Key</span>
+                <div className="flex items-center gap-2 text-emerald-300 font-semibold mb-1">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Private AI Model</span>
                 </div>
-                <div className="text-gray-400 group-hover:text-indigo-200">
-                  Click to open Key Guide & get Gemini Key
+                <div className="text-gray-400 group-hover:text-emerald-200">
+                  "Tell me about NEXUS AI architecture"
                 </div>
               </button>
             </div>

@@ -108,14 +108,9 @@ export default function App() {
       {/* Main Container */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <Header
-          provider={provider}
-          setProvider={setProvider}
-          model={model}
-          setModel={setModel}
           onOpenRAG={() => setIsRAGOpen(true)}
           onOpenAgent={() => setIsAgentOpen(true)}
           onOpenTraces={() => setIsTracesOpen(true)}
-          onOpenKeyGuide={() => setIsKeyGuideOpen(true)}
           onOpenPricing={() => setIsPricingOpen(true)}
           onOpenAuth={() => setIsAuthOpen(true)}
           usage={usage}
@@ -128,7 +123,6 @@ export default function App() {
           provider={provider}
           model={model}
           systemPrompt={systemPrompt}
-          onOpenGuide={() => setIsKeyGuideOpen(true)}
           onRefreshConversations={loadConversations}
           onQuotaExceeded={() => setIsQuotaExceededOpen(true)}
           onRefreshUsage={loadUsageStats}

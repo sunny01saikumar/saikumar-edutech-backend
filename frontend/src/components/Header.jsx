@@ -1,16 +1,11 @@
 import React from 'react';
-import { Cpu, FileText, Bot, Activity, Key, Sliders, User as UserIcon } from 'lucide-react';
+import { FileText, Bot, Activity, User as UserIcon, Sparkles } from 'lucide-react';
 import TokenMeter from './TokenMeter';
 
 export default function Header({
-  provider,
-  setProvider,
-  model,
-  setModel,
   onOpenRAG,
   onOpenAgent,
   onOpenTraces,
-  onOpenKeyGuide,
   onOpenPricing,
   onOpenAuth,
   usage,
@@ -18,35 +13,11 @@ export default function Header({
 }) {
   return (
     <header className="h-16 border-b border-gray-800/60 bg-[#0E1322]/80 backdrop-blur-md px-6 flex items-center justify-between z-10">
-      {/* Left: Router & Model Selectors */}
+      {/* Left: Private Engine Badge */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl p-1 px-3">
-          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="text-xs text-gray-400 font-medium">Provider:</span>
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none cursor-pointer capitalize"
-          >
-            <option value="auto" className="bg-gray-900">Auto Router</option>
-            <option value="openai" className="bg-gray-900">OpenAI</option>
-            <option value="anthropic" className="bg-gray-900">Anthropic Claude</option>
-            <option value="gemini" className="bg-gray-900">Google Gemini</option>
-            <option value="ollama" className="bg-gray-900">Ollama (Local)</option>
-            <option value="openai-compatible" className="bg-gray-900">OpenAI Compatible</option>
-          </select>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-2 bg-gray-900/60 border border-gray-800 rounded-xl p-1 px-3">
-          <Cpu className="w-3.5 h-3.5 text-purple-400" />
-          <span className="text-xs text-gray-400 font-medium">Model:</span>
-          <input
-            type="text"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            placeholder="Default Model"
-            className="bg-transparent text-xs font-semibold text-gray-200 focus:outline-none w-36 placeholder:text-gray-600"
-          />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="font-semibold">NEXUS Private Engine</span>
         </div>
       </div>
 
@@ -82,15 +53,6 @@ export default function Header({
           <span className="hidden lg:inline">Traces</span>
         </button>
 
-        <button
-          onClick={onOpenKeyGuide}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-xs font-medium text-indigo-300 transition-all"
-          title="API Key Setup Guide"
-        >
-          <Key className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="hidden lg:inline">API Keys</span>
-        </button>
-
         {/* User Account / Sign In */}
         <button
           onClick={onOpenAuth}
@@ -103,3 +65,4 @@ export default function Header({
     </header>
   );
 }
+
