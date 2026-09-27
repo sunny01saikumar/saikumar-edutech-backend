@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MessageSquare, Trash2, Cpu, Sparkles, Server } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Cpu, ShieldCheck } from 'lucide-react';
 
 export default function Sidebar({ conversations, activeId, onSelect, onNewChat, onDelete, providerInfo }) {
   return (
@@ -74,18 +74,19 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
         )}
       </div>
 
-      {/* Provider Status Footer */}
+      {/* Platform Creator & Security Footer */}
       <div className="p-3 border-t border-gray-800/60 bg-[#0A0D16]">
         <div className="flex items-center justify-between text-xs text-gray-300">
           <div className="flex items-center gap-2">
-            <Server className="w-4 h-4 text-emerald-400" />
-            <span className="capitalize font-mono text-[11px]">
-              {providerInfo?.defaultProvider || 'ollama'}
-            </span>
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="flex flex-col">
+              <span className="font-semibold text-white text-[11px]">NEXUS Engine</span>
+              <span className="text-[10px] text-gray-400 font-mono">Developed by Saikumar</span>
+            </div>
           </div>
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            ACTIVE
+            SECURE
           </span>
         </div>
       </div>
