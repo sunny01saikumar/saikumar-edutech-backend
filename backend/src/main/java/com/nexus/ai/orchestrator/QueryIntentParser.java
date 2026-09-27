@@ -162,9 +162,8 @@ public class QueryIntentParser {
                 queries.add(keywords + " company profile tech stack products careers");
                 break;
             case PERSON:
-                queries.add(keywords + " CEO Motivity Labs Magellanic Cloud");
-                queries.add(keywords + " biography profile background career wikipedia");
-                queries.add(keywords + " public social network achievements");
+                queries.add(keywords);
+                queries.add(keywords + " biography profile background wikipedia news");
                 break;
             case EDUCATION:
                 queries.add(keywords + " educational courses documentation research overview");
