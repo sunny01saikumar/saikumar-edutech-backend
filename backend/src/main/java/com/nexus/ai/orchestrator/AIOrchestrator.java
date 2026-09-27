@@ -52,21 +52,45 @@ public class AIOrchestrator {
         this.securityShield = securityShield;
     }
 
-    private String gatherAndLearnContext(String prompt) {
+    private String gatherAndLearnContext(String prompt, String conversationId) {
         StringBuilder combinedContext = new StringBuilder();
 
         // 0. Security Shield Prompt Sanitization
         String safePrompt = securityShield.sanitizePrompt(prompt);
 
-        // 1. Retrieve Existing RAG Vector Memory
-        String ragContext = ragService.retrieveRelevantContext(safePrompt);
+        // 1. Resolve Multi-Turn Pronouns & Context from Past Messages
+        String resolvedSearchPrompt = safePrompt;
+        if (conversationId != null && !conversationId.isEmpty()) {
+            try {
+                List<Message> history = conversationService.getMessagesForConversation(conversationId);
+                if (history != null && history.size() > 1) {
+                    // Extract previous assistant or user message to resolve pronouns (he, she, it, they, his, him)
+                    for (int i = history.size() - 2; i >= 0; i--) {
+                        Message prevMsg = history.get(i);
+                        if (prevMsg.getContent() != null && !prevMsg.getContent().trim().isEmpty()) {
+                            String prevText = prevMsg.getContent().replaceAll("[\\r\\n]", " ").trim();
+                            if (prevText.length() > 200) {
+                                prevText = prevText.substring(0, 200);
+                            }
+                            resolvedSearchPrompt = safePrompt + " (Context: " + prevText + ")";
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Multi-turn context resolution warning: {}", e.getMessage());
+            }
+        }
+
+        // 2. Retrieve Existing RAG Vector Memory
+        String ragContext = ragService.retrieveRelevantContext(resolvedSearchPrompt);
         if (ragContext != null && !ragContext.trim().isEmpty()) {
             combinedContext.append(ragContext).append("\n\n");
         }
 
-        // 2. Intent Parsing & Domain-Targeted Multi-Platform Search Routing
+        // 3. Intent Parsing & Domain-Targeted Multi-Platform Search Routing
         try {
-            com.nexus.ai.orchestrator.QueryIntentParser.ParsedIntent intent = queryIntentParser.parse(safePrompt);
+            com.nexus.ai.orchestrator.QueryIntentParser.ParsedIntent intent = queryIntentParser.parse(resolvedSearchPrompt);
             Tool webTool = toolRegistry.getTool("web_search");
             if (webTool != null && intent != null && !intent.getTargetedSearchQueries().isEmpty()) {
                 for (String searchQuery : intent.getTargetedSearchQueries()) {
@@ -109,7 +133,7 @@ public class AIOrchestrator {
 
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
-        String ragContext = gatherAndLearnContext(prompt);
+        String ragContext = gatherAndLearnContext(prompt, activeConvId);
 
         ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
         AIProvider provider = route.getProvider();
@@ -173,7 +197,7 @@ public class AIOrchestrator {
 
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
-        String ragContext = gatherAndLearnContext(prompt);
+        String ragContext = gatherAndLearnContext(prompt, activeConvId);
         ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
         AIProvider provider = route.getProvider();
 
