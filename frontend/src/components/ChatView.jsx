@@ -26,9 +26,9 @@ export default function ChatView({
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    if (conversationId) {
+    if (conversationId && !isGenerating && messages.length === 0) {
       loadConversationMessages(conversationId);
-    } else {
+    } else if (!conversationId && !isGenerating) {
       setMessages([]);
     }
     setConfigError(null);

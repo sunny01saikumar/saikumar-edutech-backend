@@ -125,7 +125,6 @@ export default function App() {
         />
 
         <ChatView
-          key={activeConversationId || 'new'}
           conversationId={activeConversationId}
           setConversationId={setActiveConversationId}
           provider={provider}
