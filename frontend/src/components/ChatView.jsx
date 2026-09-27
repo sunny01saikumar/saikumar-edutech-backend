@@ -88,7 +88,7 @@ export default function ChatView({
           ]);
         }
       },
-      onComplete: () => {
+      onComplete: async () => {
         setIsGenerating(false);
         setStreamingText((accumulated) => {
           if (accumulated) {
@@ -99,7 +99,12 @@ export default function ChatView({
           }
           return '';
         });
-        if (onRefreshConversations) onRefreshConversations();
+        if (onRefreshConversations) {
+          const list = await onRefreshConversations();
+          if (!conversationId && list && list.length > 0 && setConversationId) {
+            setConversationId(list[0].id);
+          }
+        }
         if (onRefreshUsage) onRefreshUsage();
       }
     });

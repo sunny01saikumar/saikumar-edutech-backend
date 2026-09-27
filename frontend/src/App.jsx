@@ -49,8 +49,10 @@ export default function App() {
     try {
       const data = await fetchConversations();
       setConversations(data);
+      return data;
     } catch (e) {
       console.error(e);
+      return [];
     }
   };
 
@@ -118,6 +120,7 @@ export default function App() {
         />
 
         <ChatView
+          key={activeConversationId || 'new'}
           conversationId={activeConversationId}
           setConversationId={setActiveConversationId}
           provider={provider}
