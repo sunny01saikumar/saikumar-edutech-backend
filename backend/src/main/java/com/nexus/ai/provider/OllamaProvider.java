@@ -54,13 +54,12 @@ public class OllamaProvider implements AIProvider {
                     .uri("/api/tags")
                     .retrieve()
                     .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(4))
+                    .timeout(Duration.ofSeconds(3))
                     .block();
-            return res != null;
+            return res != null && res.contains("models");
         } catch (Exception e) {
-            log.warn("Ollama availability probe at {}: {}", baseUrl, e.getMessage());
-            // If baseUrl is configured, assume available to attempt connection
-            return baseUrl != null && !baseUrl.isEmpty();
+            log.warn("Ollama availability probe failed at {}: {}", baseUrl, e.getMessage());
+            return false;
         }
     }
 
