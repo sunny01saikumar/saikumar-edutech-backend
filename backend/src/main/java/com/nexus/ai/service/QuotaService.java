@@ -31,6 +31,21 @@ public class QuotaService {
         this.userSubscriptionRepository = userSubscriptionRepository;
     }
 
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void initDefaultUser() {
+        try {
+            if (userSubscriptionRepository.findByUserId("default-user").isEmpty()) {
+                createDefaultSubscription("default-user");
+            }
+            if (tokenQuotaRepository.findByUserId("default-user").isEmpty()) {
+                createDefaultQuota("default-user");
+            }
+            log.info("Default user subscription and token quota pre-initialized.");
+        } catch (Exception e) {
+            log.warn("Default user initialization warning: {}", e.getMessage());
+        }
+    }
+
     @Transactional
     public void checkAndEnforceQuota(String userId) {
         if (userId == null || userId.isEmpty()) return; // Anonymous / default user check
