@@ -31,7 +31,7 @@ public class GroqProvider implements AIProvider {
     @Value("${nexus.ai.openai.api-key:}")
     private String openaiEnvApiKey;
 
-    @Value("${nexus.ai.groq.model:llama-3.3-70b-versatile}")
+    @Value("${nexus.ai.groq.model:llama-3.1-8b-instant}")
     private String defaultModel;
 
     @Value("${nexus.ai.groq.base-url:https://api.groq.com/openai/v1}")
@@ -84,6 +84,62 @@ public class GroqProvider implements AIProvider {
         return getSystemGroqKey();
     }
 
+    private List<String> discoverAvailableModels(WebClient webClient, String preferredModel) {
+        List<String> discovered = new ArrayList<>();
+        try {
+            String json = webClient.get()
+                    .uri("/models")
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            if (json != null) {
+                JsonNode root = objectMapper.readTree(json);
+                if (root.has("data") && root.get("data").isArray()) {
+                    for (JsonNode m : root.get("data")) {
+                        String id = m.path("id").asText("");
+                        if (!id.isEmpty() && !discovered.contains(id)) {
+                            discovered.add(id);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to dynamically fetch Groq models: {}", e.getMessage());
+        }
+
+        List<String> prioritized = new ArrayList<>();
+        if (preferredModel != null && !preferredModel.trim().isEmpty()) {
+            prioritized.add(preferredModel.trim());
+        }
+
+        List<String> popularDefaults = List.of(
+            "llama-3.1-8b-instant",
+            "llama-3.3-70b-versatile",
+            "llama3-8b-8192",
+            "llama3-70b-8192",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it"
+        );
+
+        for (String p : popularDefaults) {
+            if (discovered.contains(p) && !prioritized.contains(p)) {
+                prioritized.add(p);
+            }
+        }
+        for (String d : discovered) {
+            if (!prioritized.contains(d)) {
+                prioritized.add(d);
+            }
+        }
+        for (String p : popularDefaults) {
+            if (!prioritized.contains(p)) {
+                prioritized.add(p);
+            }
+        }
+
+        return prioritized;
+    }
+
     @Override
     public AiResponse generate(AiRequest request) {
         String apiKey = getEffectiveKey(request);
@@ -92,61 +148,63 @@ public class GroqProvider implements AIProvider {
         }
 
         long start = System.currentTimeMillis();
-        String model = (request.getRequestedModel() != null && !request.getRequestedModel().isEmpty())
-                ? request.getRequestedModel() : defaultModel;
-
-        Map<String, Object> body = buildRequestBody(request, model, false);
-
         WebClient webClient = webClientBuilder.baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
-        try {
-            String jsonResponse = webClient.post()
-                    .uri("/chat/completions")
-                    .bodyValue(body)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+        List<String> candidates = discoverAvailableModels(webClient, request.getRequestedModel());
+        for (String model : candidates) {
+            try {
+                Map<String, Object> body = buildRequestBody(request, model, false);
+                String jsonResponse = webClient.post()
+                        .uri("/chat/completions")
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
 
-            long latency = System.currentTimeMillis() - start;
-            JsonNode root = objectMapper.readTree(jsonResponse);
+                long latency = System.currentTimeMillis() - start;
+                JsonNode root = objectMapper.readTree(jsonResponse);
 
-            String content = "";
-            if (root.has("choices") && root.get("choices").size() > 0) {
-                JsonNode choice = root.get("choices").get(0);
-                if (choice.has("message") && choice.get("message").has("content")) {
-                    content = choice.get("message").get("content").asText();
+                String content = "";
+                if (root.has("choices") && root.get("choices").size() > 0) {
+                    JsonNode choice = root.get("choices").get(0);
+                    if (choice.has("message") && choice.get("message").has("content")) {
+                        content = choice.get("message").get("content").asText();
+                    }
                 }
+
+                int promptTokens = 0, completionTokens = 0, totalTokens = 0;
+                if (root.has("usage")) {
+                    JsonNode usage = root.get("usage");
+                    promptTokens = usage.path("prompt_tokens").asInt(0);
+                    completionTokens = usage.path("completion_tokens").asInt(0);
+                    totalTokens = usage.path("total_tokens").asInt(0);
+                }
+
+                return AiResponse.builder()
+                        .id(root.path("id").asText(UUID.randomUUID().toString()))
+                        .content(content)
+                        .provider(getProviderName())
+                        .model(model)
+                        .usage(new AiUsage(promptTokens, completionTokens, totalTokens))
+                        .latencyMs(latency)
+                        .finishReason(root.path("choices").path(0).path("finish_reason").asText("stop"))
+                        .build();
+
+            } catch (WebClientResponseException ex) {
+                log.warn("Groq model [{}] returned HTTP {}: {}", model, ex.getStatusCode(), ex.getResponseBodyAsString());
+                if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
+                    String detail = parseErrorMessage(ex);
+                    throw new AIProviderUnavailableException(getProviderName(), "Groq API Error (" + ex.getStatusCode().value() + "): " + detail);
+                }
+            } catch (Exception e) {
+                log.error("Groq execution error on model [{}]: {}", model, e.getMessage());
             }
-
-            int promptTokens = 0, completionTokens = 0, totalTokens = 0;
-            if (root.has("usage")) {
-                JsonNode usage = root.get("usage");
-                promptTokens = usage.path("prompt_tokens").asInt(0);
-                completionTokens = usage.path("completion_tokens").asInt(0);
-                totalTokens = usage.path("total_tokens").asInt(0);
-            }
-
-            return AiResponse.builder()
-                    .id(root.path("id").asText(UUID.randomUUID().toString()))
-                    .content(content)
-                    .provider(getProviderName())
-                    .model(model)
-                    .usage(new AiUsage(promptTokens, completionTokens, totalTokens))
-                    .latencyMs(latency)
-                    .finishReason(root.path("choices").path(0).path("finish_reason").asText("stop"))
-                    .build();
-
-        } catch (WebClientResponseException ex) {
-            log.error("Groq API error (HTTP {}): {}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            String detail = parseErrorMessage(ex);
-            throw new AIProviderUnavailableException(getProviderName(), "Groq API Error (" + ex.getStatusCode().value() + "): " + detail);
-        } catch (Exception e) {
-            log.error("Groq API execution error: {}", e.getMessage());
-            throw new AIProviderUnavailableException(getProviderName(), e.getMessage());
         }
+
+        throw new AIProviderUnavailableException(getProviderName(), "No valid Groq models available for key. Please check your Groq API Console.");
     }
 
     @Override
@@ -156,15 +214,22 @@ public class GroqProvider implements AIProvider {
             return Flux.error(new AIProviderUnavailableException(getProviderName(), "Groq API Key is missing. Please enter your key in settings or .env."));
         }
 
-        String model = (request.getRequestedModel() != null && !request.getRequestedModel().isEmpty())
-                ? request.getRequestedModel() : defaultModel;
-
-        Map<String, Object> body = buildRequestBody(request, model, true);
-
         WebClient webClient = webClientBuilder.baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
+
+        List<String> candidates = discoverAvailableModels(webClient, request.getRequestedModel());
+        return streamWithCandidates(webClient, candidates, 0, apiKey, request);
+    }
+
+    private Flux<String> streamWithCandidates(WebClient webClient, List<String> candidates, int index, String apiKey, AiRequest request) {
+        if (index >= candidates.size()) {
+            return Flux.error(new AIProviderUnavailableException(getProviderName(), "No valid Groq models available for API key."));
+        }
+
+        String model = candidates.get(index);
+        Map<String, Object> body = buildRequestBody(request, model, true);
 
         return webClient.post()
                 .uri("/chat/completions")
@@ -176,9 +241,12 @@ public class GroqProvider implements AIProvider {
                 .map(this::extractDeltaToken)
                 .filter(token -> !token.isEmpty())
                 .onErrorResume(WebClientResponseException.class, ex -> {
-                    log.error("Groq API Streaming error (HTTP {}): {}", ex.getStatusCode(), ex.getResponseBodyAsString());
-                    String detail = parseErrorMessage(ex);
-                    return Flux.error(new AIProviderUnavailableException(getProviderName(), "Groq API Error (" + ex.getStatusCode().value() + "): " + detail));
+                    log.warn("Groq model [{}] failed with HTTP {}: {}", model, ex.getStatusCode(), ex.getResponseBodyAsString());
+                    if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
+                        String detail = parseErrorMessage(ex);
+                        return Flux.error(new AIProviderUnavailableException(getProviderName(), "Groq API Error (" + ex.getStatusCode().value() + "): " + detail));
+                    }
+                    return streamWithCandidates(webClient, candidates, index + 1, apiKey, request);
                 });
     }
 
