@@ -81,7 +81,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <div className="flex flex-col">
               <span className="font-semibold text-white text-[11px]">NEXUS Engine</span>
-              <span className="text-[10px] text-gray-400 font-mono">Developed by Saikumar</span>
+              <span className="text-[10px] text-gray-400 font-mono">v1.0 SaaS</span>
             </div>
           </div>
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">

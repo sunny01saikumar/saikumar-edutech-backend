@@ -180,7 +180,7 @@ export default function ChatView({
               </button>
 
               <button
-                onClick={() => handleSend('Explain how NEXUS AI developed by Saikumar keeps my data 100% private and secure')}
+                onClick={() => handleSend('Explain how NEXUS AI keeps my data 100% private and secure')}
                 className="p-3.5 rounded-xl glass-card hover:bg-emerald-950/40 border border-emerald-500/30 transition-all text-xs group"
               >
                 <div className="flex items-center gap-2 text-emerald-300 font-semibold mb-1">
