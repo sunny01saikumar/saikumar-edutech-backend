@@ -50,26 +50,16 @@ public class GeminiProvider implements AIProvider {
     }
 
     private String getEffectiveKey(AiRequest request) {
+        String rawKey = null;
         if (request != null && request.getCustomApiKey() != null && !request.getCustomApiKey().trim().isEmpty()) {
-            return request.getCustomApiKey().trim();
+            rawKey = request.getCustomApiKey().trim();
+        } else {
+            rawKey = envApiKey;
         }
-        return envApiKey;
-    }
-
-    private List<String> getModelCandidates(String preferredModel) {
-        List<String> list = new ArrayList<>();
-        if (preferredModel != null && !preferredModel.trim().isEmpty()
-                && !preferredModel.equalsIgnoreCase("default")
-                && !preferredModel.equalsIgnoreCase("default model")) {
-            list.add(preferredModel.trim());
+        if (rawKey != null) {
+            return rawKey.trim().replaceAll("^[\"']|[\"']$", "");
         }
-        list.add("gemini-1.5-flash");
-        list.add("gemini-2.0-flash");
-        list.add("gemini-1.5-flash-002");
-        list.add("gemini-1.5-pro");
-        list.add("gemini-1.5-pro-002");
-        list.add("gemini-pro");
-        return list.stream().distinct().toList();
+        return "";
     }
 
     private List<String> discoverAvailableModels(WebClient webClient, String apiKey, String preferredModel) {
@@ -114,10 +104,7 @@ public class GeminiProvider implements AIProvider {
                 }
             }
         } catch (WebClientResponseException ex) {
-            log.warn("Gemini API key verification failed: {}", ex.getResponseBodyAsString());
-            if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 403) {
-                throw new AIProviderUnavailableException(getProviderName(), "Invalid Google Gemini API Key. Click 'API Keys' in top right to paste a valid key from Google AI Studio (aistudio.google.com).");
-            }
+            log.warn("Gemini API key verification warning (HTTP {}): {}", ex.getStatusCode(), ex.getResponseBodyAsString());
         } catch (Exception e) {
             log.warn("Failed to dynamically fetch Gemini models: {}", e.getMessage());
         }
