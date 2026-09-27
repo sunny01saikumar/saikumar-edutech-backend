@@ -46,20 +46,20 @@ public class GeminiProvider implements AIProvider {
 
     @Override
     public boolean isAvailable() {
-        return envApiKey != null && !envApiKey.trim().isEmpty();
+        String key = sanitizeKey(envApiKey);
+        return !key.isEmpty() && !key.equalsIgnoreCase("your_gemini_api_key") && !key.equalsIgnoreCase("null");
+    }
+
+    private String sanitizeKey(String raw) {
+        if (raw == null) return "";
+        return raw.trim().replaceAll("[\\r\\n\\t\"]", "").replaceAll("^['\"]|['\"]$", "").trim();
     }
 
     private String getEffectiveKey(AiRequest request) {
-        String rawKey = null;
         if (request != null && request.getCustomApiKey() != null && !request.getCustomApiKey().trim().isEmpty()) {
-            rawKey = request.getCustomApiKey().trim();
-        } else {
-            rawKey = envApiKey;
+            return sanitizeKey(request.getCustomApiKey());
         }
-        if (rawKey != null) {
-            return rawKey.trim().replaceAll("^[\"']|[\"']$", "");
-        }
-        return "";
+        return sanitizeKey(envApiKey);
     }
 
     private List<String> discoverAvailableModels(WebClient webClient, String apiKey, String preferredModel) {
@@ -119,6 +119,7 @@ public class GeminiProvider implements AIProvider {
         List<String> flagshipDefaults = List.of(
             "gemini-1.5-flash",
             "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "gemini-1.5-pro",
             "gemini-2.0-flash-lite",
             "gemini-1.5-flash-8b",
@@ -140,6 +141,20 @@ public class GeminiProvider implements AIProvider {
             }
         }
         return prioritized;
+    }
+
+    private String parseGoogleErrorMessage(WebClientResponseException ex) {
+        try {
+            String body = ex.getResponseBodyAsString();
+            if (body != null && !body.trim().isEmpty()) {
+                JsonNode root = objectMapper.readTree(body);
+                String msg = root.path("error").path("message").asText("");
+                if (!msg.isEmpty()) {
+                    return msg;
+                }
+            }
+        } catch (Exception ignored) {}
+        return ex.getMessage();
     }
 
     @Override
@@ -187,14 +202,18 @@ public class GeminiProvider implements AIProvider {
                         .build();
 
             } catch (WebClientResponseException ex) {
-                log.warn("Gemini model [{}] returned HTTP {}, trying next candidate...", model, ex.getStatusCode());
+                log.warn("Gemini model [{}] returned HTTP {}: {}", model, ex.getStatusCode(), ex.getResponseBodyAsString());
+                if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
+                    String detail = parseGoogleErrorMessage(ex);
+                    throw new AIProviderUnavailableException(getProviderName(), "Google Gemini Error (" + ex.getStatusCode().value() + "): " + detail);
+                }
             } catch (Exception e) {
                 log.error("Gemini execution error on model [{}]: {}", model, e.getMessage());
                 throw new AIProviderUnavailableException(getProviderName(), e.getMessage());
             }
         }
 
-        throw new AIProviderUnavailableException(getProviderName(), "No valid Gemini models found for configured key. Please verify your Google AI Studio key.");
+        throw new AIProviderUnavailableException(getProviderName(), "No valid Gemini models found for API key. Please check your key in settings.");
     }
 
     @Override
@@ -236,7 +255,11 @@ public class GeminiProvider implements AIProvider {
                 .map(this::extractDeltaToken)
                 .filter(token -> !token.isEmpty())
                 .onErrorResume(WebClientResponseException.class, ex -> {
-                    log.warn("Gemini model [{}] failed with HTTP {}. Retrying with candidate index [{}]...", model, ex.getStatusCode(), index + 1);
+                    log.warn("Gemini model [{}] failed with HTTP {}: {}", model, ex.getStatusCode(), ex.getResponseBodyAsString());
+                    if (ex.getStatusCode().value() == 400 || ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
+                        String detail = parseGoogleErrorMessage(ex);
+                        return Flux.error(new AIProviderUnavailableException(getProviderName(), "Google Gemini Error (" + ex.getStatusCode().value() + "): " + detail));
+                    }
                     return streamWithCandidates(webClient, candidates, index + 1, apiKey, body);
                 });
     }
