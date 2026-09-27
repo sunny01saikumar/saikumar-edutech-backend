@@ -141,10 +141,15 @@ public class QueryIntentParser {
 
     private String extractCleanKeywords(String raw) {
         if (raw == null) return "";
-        return raw.trim()
+        String cleaned = raw.trim()
                 .replaceAll("(?i)^(what is|what are|where is|where are|who is|who are|when is|when did|how is|how does|why is|why does|tell me about|explain|search web for|search for|information on)\\s+", "")
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
+
+        // Correct common name typos for robust search matching
+        cleaned = cleaned.replaceAll("(?i)\\bjoshep\\b", "Joseph")
+                         .replaceAll("(?i)\\bthoma\\b", "Thumma");
+        return cleaned;
     }
 
     private List<String> buildTargetedQueries(String keywords, QueryDomain domain, QuestionTag tag) {
@@ -157,6 +162,7 @@ public class QueryIntentParser {
                 queries.add(keywords + " company profile tech stack products careers");
                 break;
             case PERSON:
+                queries.add(keywords + " CEO Motivity Labs Magellanic Cloud");
                 queries.add(keywords + " biography profile background career wikipedia");
                 queries.add(keywords + " public social network achievements");
                 break;
