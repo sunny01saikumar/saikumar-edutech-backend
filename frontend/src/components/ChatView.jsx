@@ -55,6 +55,14 @@ export default function ChatView({
     const promptToSend = overridePrompt || inputPrompt;
     if (!promptToSend.trim() || isGenerating) return;
 
+    let activeId = conversationId;
+    if (!activeId) {
+      activeId = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+      if (setConversationId) {
+        setConversationId(activeId);
+      }
+    }
+
     setConfigError(null);
     const userMsg = { role: 'USER', content: promptToSend, timestamp: new Date().toISOString() };
     setMessages((prev) => [...prev, userMsg]);
@@ -67,7 +75,7 @@ export default function ChatView({
 
     streamChatMessage({
       message: promptToSend,
-      conversationId,
+      conversationId: activeId,
       provider,
       model,
       systemPrompt,
