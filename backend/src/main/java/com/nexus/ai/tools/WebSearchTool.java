@@ -53,31 +53,57 @@ public class WebSearchTool implements Tool {
 
         try {
             String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
-            String wikipediaUrl = "https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch=" + encoded;
-
-            String jsonResponse = webClient.get()
-                    .uri(wikipediaUrl)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(5))
-                    .block();
-
-            JsonNode root = objectMapper.readTree(jsonResponse);
-            JsonNode search = root.path("query").path("search");
-
             StringBuilder sb = new StringBuilder();
-            sb.append("Web Search Results for: ").append(query).append("\n\n");
+            sb.append("Live Search Results for: ").append(query).append("\n\n");
 
-            if (search.isArray() && search.size() > 0) {
-                int count = 0;
-                for (JsonNode item : search) {
-                    if (count++ >= 5) break;
-                    String title = item.path("title").asText();
-                    String snippet = item.path("snippet").asText().replaceAll("<[^>]*>", "");
-                    sb.append("[").append(count).append("] ").append(title).append("\n");
-                    sb.append("    Snippet: ").append(snippet).append("\n\n");
+            // 1. DuckDuckGo Instant Answer
+            try {
+                String ddgUrl = "https://api.duckduckgo.com/?q=" + encoded + "&format=json&no_html=1&skip_disambig=1";
+                String ddgJson = webClient.get()
+                        .uri(ddgUrl)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .timeout(Duration.ofSeconds(4))
+                        .block();
+                if (ddgJson != null) {
+                    JsonNode ddgRoot = objectMapper.readTree(ddgJson);
+                    String abstractText = ddgRoot.path("AbstractText").asText("");
+                    if (!abstractText.isEmpty()) {
+                        sb.append("Summary: ").append(abstractText).append("\n\n");
+                    }
                 }
-            } else {
+            } catch (Exception e) {
+                log.warn("DuckDuckGo search warning: {}", e.getMessage());
+            }
+
+            // 2. Wikipedia Search
+            try {
+                String wikipediaUrl = "https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch=" + encoded;
+                String wikiJson = webClient.get()
+                        .uri(wikipediaUrl)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .timeout(Duration.ofSeconds(4))
+                        .block();
+                if (wikiJson != null) {
+                    JsonNode wikiRoot = objectMapper.readTree(wikiJson);
+                    JsonNode search = wikiRoot.path("query").path("search");
+                    if (search.isArray() && search.size() > 0) {
+                        int count = 0;
+                        for (JsonNode item : search) {
+                            if (count++ >= 4) break;
+                            String title = item.path("title").asText();
+                            String snippet = item.path("snippet").asText().replaceAll("<[^>]*>", "");
+                            sb.append("[").append(count).append("] ").append(title).append("\n");
+                            sb.append("    ").append(snippet).append("\n\n");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Wikipedia search warning: {}", e.getMessage());
+            }
+
+            if (sb.length() < 35) {
                 sb.append("No direct web search results found for query: ").append(query);
             }
 
