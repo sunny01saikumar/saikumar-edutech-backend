@@ -96,6 +96,7 @@ public class QuotaService {
 
     public Map<String, Object> getUsageStats(String userId) {
         String effectiveUserId = (userId != null && !userId.isEmpty()) ? userId : "default-user";
+        boolean isGuest = "default-user".equalsIgnoreCase(effectiveUserId) || effectiveUserId.startsWith("guest-");
 
         UserSubscription sub = userSubscriptionRepository.findByUserId(effectiveUserId)
                 .orElseGet(() -> createDefaultSubscription(effectiveUserId));
@@ -103,10 +104,21 @@ public class QuotaService {
         TokenQuota quota = tokenQuotaRepository.findByUserId(effectiveUserId)
                 .orElseGet(() -> createDefaultQuota(effectiveUserId));
 
+        // For Unauthenticated Guest Users: Automatically refresh token balance on session load
+        if (isGuest) {
+            quota.setTokensUsedToday(0);
+            quota.setLastResetDate(LocalDate.now());
+            tokenQuotaRepository.save(quota);
+        } else if (quota.getLastResetDate() == null || !quota.getLastResetDate().equals(LocalDate.now())) {
+            quota.setTokensUsedToday(0);
+            quota.setLastResetDate(LocalDate.now());
+            tokenQuotaRepository.save(quota);
+        }
+
         long hoursUntilReset = ChronoUnit.HOURS.between(LocalDateTime.now(), LocalDateTime.now().plusDays(1).withHour(0).withMinute(0).withSecond(0));
 
         Map<String, Object> map = new HashMap<>();
-        map.put("plan", sub.getPlan());
+        map.put("plan", isGuest ? "GUEST" : sub.getPlan());
         map.put("tokensUsedToday", quota.getTokensUsedToday());
         map.put("dailyLimit", sub.getDailyTokenLimit());
         map.put("tokensUsedThisMonth", quota.getTokensUsedThisMonth());

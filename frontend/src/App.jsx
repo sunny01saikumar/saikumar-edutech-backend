@@ -43,10 +43,15 @@ export default function App() {
     loadConversations();
     loadProviders();
     loadUsageStats();
-  }, []);
+  }, [currentUser]);
 
   const loadConversations = async () => {
     try {
+      if (!currentUser) {
+        setConversations([]);
+        setActiveConversationId(null);
+        return [];
+      }
       const data = await fetchConversations();
       setConversations(data);
       return data;
