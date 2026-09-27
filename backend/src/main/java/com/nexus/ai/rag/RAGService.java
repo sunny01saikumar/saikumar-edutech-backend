@@ -6,6 +6,8 @@ import com.nexus.ai.repository.DocumentChunkRepository;
 import com.nexus.ai.repository.DocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,23 @@ public class RAGService {
         this.vectorService = vectorService;
         this.documentRepository = documentRepository;
         this.documentChunkRepository = documentChunkRepository;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void purgeStaleAutoLearnedDocs() {
+        try {
+            List<Document> autoDocs = documentRepository.findAll().stream()
+                    .filter(d -> "text/auto-learning".equalsIgnoreCase(d.getFileType()))
+                    .collect(Collectors.toList());
+            for (Document doc : autoDocs) {
+                documentChunkRepository.deleteByDocumentId(doc.getId());
+                documentRepository.deleteById(doc.getId());
+            }
+            log.info("Purged {} stale auto-learning documents from RAG database on startup", autoDocs.size());
+        } catch (Exception e) {
+            log.warn("Failed to purge stale auto-learning documents: {}", e.getMessage());
+        }
     }
 
     @Transactional
@@ -72,6 +91,10 @@ public class RAGService {
     @Transactional
     public Document indexTextKnowledge(String title, String content) {
         if (content == null || content.trim().isEmpty()) return null;
+        if (content.contains("No direct web search results found") || content.contains("is not globally indexed") || content.contains("Warangal district")) {
+            return null; // Reject bad/hallucinated text from vector store
+        }
+
         log.info("Autonomous self-learning indexing: [{}]", title);
 
         List<String> rawChunks = textChunker.chunkText(content);
