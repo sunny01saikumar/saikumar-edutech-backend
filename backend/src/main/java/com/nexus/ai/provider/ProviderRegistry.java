@@ -36,36 +36,32 @@ public class ProviderRegistry {
     }
 
     public AIProvider getDefaultProvider() {
-        // Priority 1: Configured default provider (e.g. Gemini if AI_PROVIDER=gemini)
-        AIProvider configured = providers.get(configuredDefaultProvider.toLowerCase());
-        if (configured != null && configured.isAvailable()) {
-            return configured;
-        }
-
-        // Priority 2: Gemini if available
+        // Priority 1: Gemini if key configured on Render (24/7 Cloud Engine)
         AIProvider gemini = providers.get("gemini");
         if (gemini != null && gemini.isAvailable()) return gemini;
 
-        // Priority 3: OpenAI if available
+        // Priority 2: OpenAI if key configured on Render
         AIProvider openai = providers.get("openai");
         if (openai != null && openai.isAvailable()) return openai;
 
-        // Priority 4: Anthropic if available
+        // Priority 3: Anthropic if key configured on Render
         AIProvider anthropic = providers.get("anthropic");
         if (anthropic != null && anthropic.isAvailable()) return anthropic;
 
-        // Priority 5: Fallback to configured or Ollama
-        if (configured != null) return configured;
-
+        // Priority 4: Ollama if local tunnel is active
         AIProvider ollama = providers.get("ollama");
+        if (ollama != null && ollama.isAvailable()) return ollama;
+
+        // Priority 5: Configured default if available
+        AIProvider configured = providers.get(configuredDefaultProvider.toLowerCase());
+        if (configured != null && configured.isAvailable()) return configured;
+
+        // Fallback: If no provider key is present, default to Gemini
+        if (gemini != null) return gemini;
         if (ollama != null) return ollama;
 
-        for (AIProvider p : providers.values()) {
-            return p;
-        }
-
-        throw new AIProviderUnavailableException(configuredDefaultProvider,
-                "No AI provider is configured or available.");
+        throw new AIProviderUnavailableException("none",
+                "No AI provider key is configured on Render. Please add GEMINI_API_KEY in Render Environment Variables for 24/7 availability.");
     }
 
     public Map<String, Object> getProviderStatusMap() {
