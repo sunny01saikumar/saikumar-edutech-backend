@@ -53,9 +53,14 @@ public class WebSearchTool implements Tool {
     private String extractCleanKeywords(String rawQuery) {
         if (rawQuery == null) return "";
         String cleaned = rawQuery.trim()
-                .replaceAll("(?i)^(what is the special of|what is the specialty of|what is special about|what is|tell me about|explain|where is|who is|how does|what are the|search web for|search for|about|special of|specialty of)\\s+", "")
+                .replaceAll("(?i)^(what is the exactly collected by|what is the collection of|what is the box office collection of|how much was collected by|how much did|what is the total collection of|exactly collected by|box office collection of|what is the special of|what is the specialty of|what is special about|what is|tell me about|explain|where is|who is|how does|what are the|search web for|search for|about|special of|specialty of)\\s+", "")
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
+        if (rawQuery.toLowerCase().contains("collected") || rawQuery.toLowerCase().contains("collection") || rawQuery.toLowerCase().contains("box office")) {
+            if (!cleaned.toLowerCase().contains("box office") && !cleaned.toLowerCase().contains("collection")) {
+                cleaned += " box office collection";
+            }
+        }
         return cleaned.isEmpty() ? rawQuery.trim() : cleaned;
     }
 
