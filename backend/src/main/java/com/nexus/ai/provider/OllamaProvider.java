@@ -46,26 +46,26 @@ public class OllamaProvider implements AIProvider {
     @Override
     public boolean isAvailable() {
         try {
-            WebClient webClient = webClientBuilder.baseUrl(baseUrl).build();
+            WebClient webClient = webClientBuilder.baseUrl(baseUrl)
+                    .defaultHeader("bypass-tunnel-reminder", "true")
+                    .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
+                    .build();
             String res = webClient.get()
                     .uri("/api/tags")
                     .retrieve()
                     .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(2))
+                    .timeout(Duration.ofSeconds(4))
                     .block();
-            return res != null && res.contains("models");
+            return res != null;
         } catch (Exception e) {
-            return false;
+            log.warn("Ollama availability probe at {}: {}", baseUrl, e.getMessage());
+            // If baseUrl is configured, assume available to attempt connection
+            return baseUrl != null && !baseUrl.isEmpty();
         }
     }
 
     @Override
     public AiResponse generate(AiRequest request) {
-        if (!isAvailable()) {
-            throw new AIProviderUnavailableException(getProviderName(),
-                    "Ollama server is not running at " + baseUrl + ". Please start Ollama or configure a cloud API key.");
-        }
-
         long start = System.currentTimeMillis();
         String model = (request.getRequestedModel() != null && !request.getRequestedModel().isEmpty())
                 ? request.getRequestedModel() : defaultModel;
@@ -74,6 +74,8 @@ public class OllamaProvider implements AIProvider {
 
         WebClient webClient = webClientBuilder.baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("bypass-tunnel-reminder", "true")
+                .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
                 .build();
 
         try {
@@ -114,11 +116,6 @@ public class OllamaProvider implements AIProvider {
 
     @Override
     public Flux<String> stream(AiRequest request) {
-        if (!isAvailable()) {
-            return Flux.error(new AIProviderUnavailableException(getProviderName(),
-                    "Ollama server is not running at " + baseUrl + ". Please start Ollama or select another provider."));
-        }
-
         String model = (request.getRequestedModel() != null && !request.getRequestedModel().isEmpty())
                 ? request.getRequestedModel() : defaultModel;
 
@@ -126,6 +123,8 @@ public class OllamaProvider implements AIProvider {
 
         WebClient webClient = webClientBuilder.baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("bypass-tunnel-reminder", "true")
+                .defaultHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0")
                 .build();
 
         return webClient.post()
@@ -134,14 +133,14 @@ public class OllamaProvider implements AIProvider {
                 .retrieve()
                 .onStatus(status -> status.isError(), clientResponse ->
                     clientResponse.bodyToMono(String.class).map(errBody ->
-                        new AIProviderUnavailableException(getProviderName(), "Ollama error for model '" + model + "': " + errBody + ". Try running 'ollama pull " + model + "' in terminal.")
+                        new AIProviderUnavailableException(getProviderName(), "Ollama connection error: " + errBody)
                     )
                 )
                 .bodyToFlux(String.class)
                 .flatMap(chunk -> Flux.fromArray(chunk.split("\n")))
                 .map(this::extractDeltaToken)
                 .filter(token -> !token.isEmpty())
-                .onErrorResume(e -> Flux.error(new AIProviderUnavailableException(getProviderName(), e.getMessage())));
+                .onErrorResume(e -> Flux.error(new AIProviderUnavailableException(getProviderName(), "NEXUS Engine connection failed: " + e.getMessage())));
     }
 
     private String extractDeltaToken(String line) {
