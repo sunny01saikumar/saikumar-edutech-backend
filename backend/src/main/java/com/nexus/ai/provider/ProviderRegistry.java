@@ -36,32 +36,37 @@ public class ProviderRegistry {
     }
 
     public AIProvider getDefaultProvider() {
-        // Priority 1: Gemini if key configured on Render (24/7 Cloud Engine)
+        // Priority 1: Groq if Groq key (or gsk_ key) configured on Render
+        AIProvider groq = providers.get("groq");
+        if (groq != null && groq.isAvailable()) return groq;
+
+        // Priority 2: Gemini if key configured on Render
         AIProvider gemini = providers.get("gemini");
         if (gemini != null && gemini.isAvailable()) return gemini;
 
-        // Priority 2: OpenAI if key configured on Render
+        // Priority 3: OpenAI if key configured on Render
         AIProvider openai = providers.get("openai");
         if (openai != null && openai.isAvailable()) return openai;
 
-        // Priority 3: Anthropic if key configured on Render
+        // Priority 4: Anthropic if key configured on Render
         AIProvider anthropic = providers.get("anthropic");
         if (anthropic != null && anthropic.isAvailable()) return anthropic;
 
-        // Priority 4: Ollama if local tunnel is active
+        // Priority 5: Ollama if local tunnel is active
         AIProvider ollama = providers.get("ollama");
         if (ollama != null && ollama.isAvailable()) return ollama;
 
-        // Priority 5: Configured default if available
+        // Priority 6: Configured default if available
         AIProvider configured = providers.get(configuredDefaultProvider.toLowerCase());
         if (configured != null && configured.isAvailable()) return configured;
 
-        // Fallback: If no provider key is present, default to Gemini
+        // Fallbacks
+        if (groq != null) return groq;
         if (gemini != null) return gemini;
         if (ollama != null) return ollama;
 
         throw new AIProviderUnavailableException("none",
-                "No AI provider key is configured on Render. Please add GEMINI_API_KEY in Render Environment Variables for 24/7 availability.");
+                "No AI provider key is configured on Render. Please add GROQ_API_KEY or GEMINI_API_KEY in Render Environment Variables for 24/7 availability.");
     }
 
     public Map<String, Object> getProviderStatusMap() {

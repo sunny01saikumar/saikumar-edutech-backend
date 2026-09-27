@@ -47,6 +47,7 @@ public class GeminiProvider implements AIProvider {
     @Override
     public boolean isAvailable() {
         String key = sanitizeKey(envApiKey);
+        if (key.startsWith("gsk_")) return false;
         return !key.isEmpty() && !key.equalsIgnoreCase("your_gemini_api_key") && !key.equalsIgnoreCase("null");
     }
 
