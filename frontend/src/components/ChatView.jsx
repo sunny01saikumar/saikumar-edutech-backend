@@ -26,9 +26,11 @@ export default function ChatView({
   const messagesEndRef = useRef(null);
 
   const prevConvIdRef = useRef(conversationId);
+  const accumulatedRef = useRef('');
+
   useEffect(() => {
     if (prevConvIdRef.current !== conversationId) {
-      if (conversationId && !isGenerating) {
+      if (conversationId && !isGenerating && messages.length === 0) {
         loadConversationMessages(conversationId);
       } else if (!conversationId && !isGenerating) {
         setMessages([]);
@@ -72,6 +74,7 @@ export default function ChatView({
     setMessages((prev) => [...prev, userMsg]);
     setInputPrompt('');
     setIsGenerating(true);
+    accumulatedRef.current = '';
     setStreamingText('');
 
     const abortController = new AbortController();
@@ -85,10 +88,12 @@ export default function ChatView({
       systemPrompt,
       signal: abortController.signal,
       onToken: (token) => {
-        setStreamingText((prev) => prev + token);
+        accumulatedRef.current += token;
+        setStreamingText(accumulatedRef.current);
       },
       onError: (err) => {
         setIsGenerating(false);
+        accumulatedRef.current = '';
         if (err.data && err.data.error === 'TOKEN_QUOTA_EXCEEDED') {
           if (onQuotaExceeded) onQuotaExceeded();
         } else if (err.data && err.data.error === 'AI_PROVIDER_UNAVAILABLE') {
@@ -102,15 +107,15 @@ export default function ChatView({
       },
       onComplete: async () => {
         setIsGenerating(false);
-        setStreamingText((accumulated) => {
-          if (accumulated) {
-            setMessages((prev) => [
-              ...prev,
-              { role: 'ASSISTANT', content: accumulated, providerUsed: provider, modelUsed: model }
-            ]);
-          }
-          return '';
-        });
+        const finalContent = accumulatedRef.current;
+        setStreamingText('');
+        if (finalContent) {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'ASSISTANT', content: finalContent, providerUsed: provider, modelUsed: model }
+          ]);
+        }
+        accumulatedRef.current = '';
         if (onRefreshConversations) {
           await onRefreshConversations();
         }
