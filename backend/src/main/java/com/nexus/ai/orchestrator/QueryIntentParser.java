@@ -145,7 +145,13 @@ public class QueryIntentParser {
                 .replaceAll("(?i)^(what is|what are|where is|where are|who is|who are|when is|when did|how is|how does|why is|why does|tell me about|explain me about|explain me abot|explain|search web for|search for|information on)\\s+", "")
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
-        return cleaned.replaceAll("(?i)\\bcaption\\b", "captain");
+        cleaned = cleaned.replaceAll("(?i)\\bcaption\\b", "captain");
+        String lowerRaw = raw.toLowerCase();
+        if ((lowerRaw.contains("subas chandra") || lowerRaw.contains("subash chandra") || lowerRaw.contains("subhash chandra")) &&
+            (lowerRaw.contains("boss") || lowerRaw.contains("bose") || lowerRaw.contains("netaji"))) {
+            return "Subhas Chandra Bose freedom fighter Netaji";
+        }
+        return cleaned;
     }
 
     private List<String> buildTargetedQueries(String keywords, QueryDomain domain, QuestionTag tag) {

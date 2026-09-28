@@ -57,6 +57,11 @@ public class WebSearchTool implements Tool {
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
         cleaned = cleaned.replaceAll("(?i)\\bcaption\\b", "captain");
+        String lowerRaw = rawQuery.toLowerCase();
+        if ((lowerRaw.contains("subas chandra") || lowerRaw.contains("subash chandra") || lowerRaw.contains("subhash chandra")) &&
+            (lowerRaw.contains("boss") || lowerRaw.contains("bose") || lowerRaw.contains("netaji"))) {
+            return "Subhas Chandra Bose freedom fighter Netaji";
+        }
         if (rawQuery.toLowerCase().contains("collected") || rawQuery.toLowerCase().contains("collection") || rawQuery.toLowerCase().contains("box office")) {
             if (!cleaned.toLowerCase().contains("box office") && !cleaned.toLowerCase().contains("collection")) {
                 cleaned += " box office collection";
