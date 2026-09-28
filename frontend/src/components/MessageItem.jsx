@@ -6,33 +6,42 @@ import { User, Cpu, Copy, Check, Clock, Zap } from 'lucide-react';
 
 function preprocessMarkdown(text) {
   if (!text) return '';
-  let content = text;
 
-  // 1. Strip drafting notes, self-corrections, checklist confirmations, and meta-rule blocks
-  content = content.replace(/\*?\s*\*?Self-Correction during drafting:.*?\n\n/gsi, '');
-  content = content.replace(/\*?\s*\*?Drafting Step \d+:.*?\n/gsi, '\n');
-  content = content.replace(/\*?\s*\*?Heading \d*:\s*/gsi, '');
-  content = content.replace(/Constraints\/Persona:.*?\n/gsi, '');
-  content = content.replace(/Formatting Rules:.*?\n/gsi, '');
-  content = content.replace(/^User question:.*?\n/gsi, '');
-  content = content.replace(/^Persona requirements:.*?\n/gsi, '');
-  content = content.replace(/Use (code|Copy code|##|###|\*|\-|\w+)+ (for main headings|for subheadings|for bullet points|for lists|for workflow representation)/gsi, '');
-  content = content.replace(/\*\s*Use\s+code\s+Copy code.*?\n/gsi, '\n');
-  content = content.replace(/\*\s*\*?NEXUS AI persona\?.*?\n/gsi, '');
-  content = content.replace(/\*\s*\*?(Comprehensive|Topic-by-topic|Clear headings|Bullet points|Code in language-tagged|No meta\/system notes)\?.*?\n/gsi, '');
-  content = content.replace(/Bullet:\s*/gsi, '* ');
+  // Split on code block markers (```) so code content inside fenced blocks is preserved 100% byte-for-byte
+  const parts = text.split(/(```[\s\S]*?```)/g);
 
-  // 2. Fix inline list squashing (convert inline '* Item' into clean fresh-line lists)
-  content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'\(\[\{])/g, '$1\n\n* $2');
-  content = content.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'\(\[\{])/g, '$1\n\n$2');
+  return parts.map((part) => {
+    // If this part is a code block, leave it completely untouched
+    if (part.startsWith('```')) {
+      return part;
+    }
 
-  // 3. Convert LaTeX arrows to clean Unicode
-  content = content
-    .replace(/\\rightarrow|\$\s*\\rightarrow\s*\$|\$\s*\\to\s*\$|\\to/g, '→')
-    .replace(/\\leftarrow|\$\s*\\leftarrow\s*\$/g, '←')
-    .replace(/\\Rightarrow|\$\s*\\Rightarrow\s*\$/g, '⇒');
+    // Clean text outside code blocks
+    let content = part;
+    content = content.replace(/\*?\s*\*?Self-Correction during drafting:.*?\n\n/gsi, '');
+    content = content.replace(/\*?\s*\*?Drafting Step \d+:.*?\n/gsi, '\n');
+    content = content.replace(/\*?\s*\*?Heading \d*:\s*/gsi, '');
+    content = content.replace(/Constraints\/Persona:.*?\n/gsi, '');
+    content = content.replace(/Formatting Rules:.*?\n/gsi, '');
+    content = content.replace(/^User question:.*?\n/gsi, '');
+    content = content.replace(/^Persona requirements:.*?\n/gsi, '');
+    content = content.replace(/Use (code|Copy code|##|###|\*|\-|\w+)+ (for main headings|for subheadings|for bullet points|for lists|for workflow representation)/gsi, '');
+    content = content.replace(/\*\s*Use\s+code\s+Copy code.*?\n/gsi, '\n');
+    content = content.replace(/code\s+Copy code/gsi, '');
+    content = content.replace(/Bullet:\s*/gsi, '* ');
 
-  return content.trim();
+    // Fix inline list squashing outside code blocks
+    content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'\(\[\{])/g, '$1\n\n* $2');
+    content = content.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'\(\[\{])/g, '$1\n\n$2');
+
+    // Convert LaTeX arrows to clean Unicode
+    content = content
+      .replace(/\\rightarrow|\$\s*\\rightarrow\s*\$|\$\s*\\to\s*\$|\\to/g, '→')
+      .replace(/\\leftarrow|\$\s*\\leftarrow\s*\$/g, '←')
+      .replace(/\\Rightarrow|\$\s*\\Rightarrow\s*\$/g, '⇒');
+
+    return content;
+  }).join('').trim();
 }
 
 export default function MessageItem({ message, isStreaming }) {
@@ -113,6 +122,7 @@ export default function MessageItem({ message, isStreaming }) {
                               {lang}
                             </span>
                             <button
+                              type="button"
                               onClick={() => handleCopy(codeString)}
                               className="flex items-center gap-1 px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white transition-colors text-xs font-sans"
                             >
@@ -120,8 +130,8 @@ export default function MessageItem({ message, isStreaming }) {
                               <span>{copied ? 'Copied!' : 'Copy code'}</span>
                             </button>
                           </div>
-                          <pre className="p-4 overflow-x-auto text-xs leading-relaxed font-mono bg-[#0B0F19] text-gray-100">
-                            <code className={`${className || ''} text-gray-100`} {...props}>
+                          <pre className="p-4 overflow-x-auto text-xs leading-relaxed font-mono bg-[#0B0F19] text-gray-100 whitespace-pre-wrap break-words">
+                            <code className={`${className || ''} text-gray-100 whitespace-pre-wrap break-words`} {...props}>
                               {children}
                             </code>
                           </pre>
