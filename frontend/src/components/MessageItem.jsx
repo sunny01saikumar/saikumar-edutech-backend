@@ -6,9 +6,19 @@ import { User, Cpu, Copy, Check, Clock, Zap } from 'lucide-react';
 
 function preprocessMarkdown(text) {
   if (!text) return '';
+  let content = text;
 
-  // Split on code block markers (```) so code content inside fenced blocks is preserved 100% byte-for-byte
-  const parts = text.split(/(```[\s\S]*?```)/g);
+  // 1. Auto-fix missing fenced code block backticks (when LLM outputs "java\nimport..." or "java// File:...")
+  content = content.replace(/(^|\n|\r)(java|python|javascript|typescript|bash|sh|xml|json|sql|csharp|cpp)(\/\/|\/\*|\s*\n\s*(?:import|package|public|class|#|const|let|var|<|\/\*))/gsi, '$1\n```$2\n$3');
+
+  // 2. Auto-close unclosed fenced code blocks if the response ended inside a code block
+  const fenceCount = (content.match(/```/g) || []).length;
+  if (fenceCount % 2 !== 0) {
+    content += '\n```';
+  }
+
+  // 3. Split on code block markers (```) so code content inside fenced blocks is preserved 100% byte-for-byte
+  const parts = content.split(/(```[\s\S]*?```)/g);
 
   return parts.map((part) => {
     // If this part is a code block, leave it completely untouched
@@ -17,30 +27,33 @@ function preprocessMarkdown(text) {
     }
 
     // Clean text outside code blocks
-    let content = part;
-    content = content.replace(/\*?\s*\*?Self-Correction during drafting:.*?\n\n/gsi, '');
-    content = content.replace(/\*?\s*\*?Drafting Step \d+:.*?\n/gsi, '\n');
-    content = content.replace(/\*?\s*\*?Heading \d*:\s*/gsi, '');
-    content = content.replace(/Constraints\/Persona:.*?\n/gsi, '');
-    content = content.replace(/Formatting Rules:.*?\n/gsi, '');
-    content = content.replace(/^User question:.*?\n/gsi, '');
-    content = content.replace(/^Persona requirements:.*?\n/gsi, '');
-    content = content.replace(/Use (code|Copy code|##|###|\*|\-|\w+)+ (for main headings|for subheadings|for bullet points|for lists|for workflow representation)/gsi, '');
-    content = content.replace(/\*\s*Use\s+code\s+Copy code.*?\n/gsi, '\n');
-    content = content.replace(/code\s+Copy code/gsi, '');
-    content = content.replace(/Bullet:\s*/gsi, '* ');
+    let textChunk = part;
+    textChunk = textChunk.replace(/\*?\s*\*?Self-Correction during drafting:.*?\n\n/gsi, '');
+    textChunk = textChunk.replace(/\*?\s*\*?Drafting Step \d+:.*?\n/gsi, '\n');
+    textChunk = textChunk.replace(/\*?\s*\*?Heading \d*:\s*/gsi, '');
+    textChunk = textChunk.replace(/Constraints\/Persona:.*?\n/gsi, '');
+    textChunk = textChunk.replace(/Formatting Rules:.*?\n/gsi, '');
+    textChunk = textChunk.replace(/^User question:.*?\n/gsi, '');
+    textChunk = textChunk.replace(/^Persona requirements:.*?\n/gsi, '');
+    textChunk = textChunk.replace(/Use (code|Copy code|##|###|\*|\-|\w+)+ (for main headings|for subheadings|for bullet points|for lists|for workflow representation)/gsi, '');
+    textChunk = textChunk.replace(/\*\s*Use\s+code\s+Copy code.*?\n/gsi, '\n');
+    textChunk = textChunk.replace(/code\s+Copy code/gsi, '');
+    textChunk = textChunk.replace(/Bullet:\s*/gsi, '* ');
+
+    // Ensure Markdown headings (#, ##, ###) always have double newlines before them
+    textChunk = textChunk.replace(/([^\n])\n*(#{1,6}\s+)/g, '$1\n\n$2');
 
     // Fix inline list squashing outside code blocks
-    content = content.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'\(\[\{])/g, '$1\n\n* $2');
-    content = content.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'\(\[\{])/g, '$1\n\n$2');
+    textChunk = textChunk.replace(/([^\n])\s*\*\s+([A-Z0-9@#`"'\(\[\{])/g, '$1\n\n* $2');
+    textChunk = textChunk.replace(/([^\n])\s*(\d+\.\s+[A-Z`"'\(\[\{])/g, '$1\n\n$2');
 
     // Convert LaTeX arrows to clean Unicode
-    content = content
+    textChunk = textChunk
       .replace(/\\rightarrow|\$\s*\\rightarrow\s*\$|\$\s*\\to\s*\$|\\to/g, '→')
       .replace(/\\leftarrow|\$\s*\\leftarrow\s*\$/g, '←')
       .replace(/\\Rightarrow|\$\s*\\Rightarrow\s*\$/g, '⇒');
 
-    return content;
+    return textChunk;
   }).join('').trim();
 }
 
