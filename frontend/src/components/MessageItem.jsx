@@ -110,7 +110,7 @@ export default function MessageItem({ message, isStreaming }) {
                   code({ node, inline, className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || '');
                     const codeString = String(children).replace(/\n$/, '');
-                    const isBlock = !inline || codeString.includes('\n');
+                    const isBlock = match || (!inline && codeString.includes('\n'));
 
                     if (isBlock) {
                       const lang = match ? match[1] : 'code';
@@ -139,7 +139,7 @@ export default function MessageItem({ message, isStreaming }) {
                       );
                     }
                     return (
-                      <code className="px-1.5 py-0.5 rounded bg-gray-800 text-indigo-300 font-mono text-xs" {...props}>
+                      <code className="px-1.5 py-0.5 rounded bg-gray-800/80 text-cyan-300 font-mono text-[13px] border border-gray-700/50" {...props}>
                         {children}
                       </code>
                     );

@@ -39,8 +39,9 @@ public class ContextWindowBuilder {
 
             4. CONTEXTUAL & PURPOSEFUL DELIVERABLES:
                - For Software Engineering & Architecture:
-                 - ALWAYS output clean, production-grade, multi-line code blocks wrapped in fenced markdown with language tags (e.g. ```java ... ```).
-                 - NEVER concatenate code lines onto a single line. Every statement MUST be on its own line with proper indentation.
+                 - Output complete multi-line code inside ONE SINGLE fenced code block with exact language tag (e.g. ```java ... ```).
+                 - Use inline backticks (`HttpClient`, `GET`) ONLY for short class or method names within prose sentences. NEVER put single-word terms in fenced code blocks.
+                 - NEVER concatenate code statements onto a single line. Every statement MUST be on its own line with proper indentation.
                  - Use modern, compiling standard libraries (e.g. Java 11+ `java.net.http.HttpClient`, Spring `WebClient`, or `RestTemplate`) with proper try-catch error handling, Jackson/Gson JSON parsing, and non-blocking streaming.
                  - NEVER invent non-existent API methods on Java classes.
                  - Provide "❌ Junior Anti-Pattern" vs "✅ Senior Best Practice" comparisons and ASCII architecture diagrams where applicable.
