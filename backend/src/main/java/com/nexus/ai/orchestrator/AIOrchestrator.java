@@ -109,8 +109,7 @@ public class AIOrchestrator {
                                     .append(searchResult)
                                     .append("\n--------------------------------------\n");
 
-                            // Self-learn & index into RAG vector database for persistent memory
-                            ragService.indexTextKnowledge("Auto-Learned [" + intent.getDomain() + "]: " + intent.getCleanKeywords(), searchResult);
+                            // Append live web search data to immediate context window (RAG vector store is reserved for explicit admin uploads)
                             break;
                         }
                     }

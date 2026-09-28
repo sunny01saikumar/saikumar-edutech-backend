@@ -29,10 +29,25 @@ public class JwtUtil {
 
     public String extractEmail(String token) {
         try {
+            if (token == null) return null;
+            if (token.startsWith("Bearer ")) token = token.substring(7);
             byte[] decoded = Base64.getUrlDecoder().decode(token);
             String payload = new String(decoded, StandardCharsets.UTF_8);
             String[] parts = payload.split(":");
-            return parts[1];
+            return parts.length > 1 ? parts[1] : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String extractRole(String token) {
+        try {
+            if (token == null) return null;
+            if (token.startsWith("Bearer ")) token = token.substring(7);
+            byte[] decoded = Base64.getUrlDecoder().decode(token);
+            String payload = new String(decoded, StandardCharsets.UTF_8);
+            String[] parts = payload.split(":");
+            return parts.length > 2 ? parts[2] : null;
         } catch (Exception e) {
             return null;
         }

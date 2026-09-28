@@ -49,26 +49,46 @@ export async function sendChatMessage({ message, conversationId, provider, model
   return res.json();
 }
 
+function getAuthHeaders() {
+  const token = localStorage.getItem('nexus_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 export async function uploadDocument(file) {
   const formData = new FormData();
   formData.append('file', file);
   const res = await fetch('/api/ai/documents/upload', {
     method: 'POST',
+    headers: getAuthHeaders(),
     body: formData
   });
-  if (!res.ok) throw new Error('Document upload failed');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Document upload failed. Admin access required.');
+  }
   return res.json();
 }
 
 export async function fetchDocuments() {
-  const res = await fetch('/api/ai/documents');
-  if (!res.ok) throw new Error('Failed to fetch documents');
+  const res = await fetch('/api/ai/documents', {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Failed to fetch documents. Admin access required.');
+  }
   return res.json();
 }
 
 export async function deleteDocument(id) {
-  const res = await fetch(`/api/ai/documents/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete document');
+  const res = await fetch(`/api/ai/documents/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Failed to delete document. Admin access required.');
+  }
   return res.json();
 }
 
@@ -89,7 +109,12 @@ export async function fetchAgentSteps(taskId) {
 }
 
 export async function fetchTraces() {
-  const res = await fetch('/api/ai/traces');
-  if (!res.ok) throw new Error('Failed to fetch traces');
+  const res = await fetch('/api/ai/traces', {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Failed to fetch traces. Admin access required.');
+  }
   return res.json();
 }
