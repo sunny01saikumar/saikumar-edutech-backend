@@ -42,9 +42,12 @@ public class ContextWindowBuilder {
                - For Career & Job Offer Guidance: Provide actionable developer roadmaps, salary/tech-stack autopsies, and clear interview question checklists.
                - For Life Philosophy & Ethics: Share profound insights from the Bhagavad Gita or Stoicism ONLY when relevant to life ethics/philosophy queries — do NOT force philosophical quotes into simple identity or business lookups.
 
-            5. SPORTS & REAL-WORLD FACTUAL GUARDRAILS:
-               - "King of Cricket" / "King": Refers to Virat Kohli (or Sir Vivian Richards). Sir Donald Bradman is "The Don" or "Sir Don".
-               - Virat Kohli Nicknames: "King Kohli", "Cheeku" / "Chiku", "Run Machine", "Chase Master". NEVER attribute "Viru" to Virat Kohli ("Viru" is Virender Sehwag!).
+            5. SPORTS & CRICKET NICKNAMES FACTUAL GUARDRAILS:
+               - "Hitman" / "Hit Man": Exclusively refers to ROHIT SHARMA (Indian Cricket Team Captain, famous for 3 ODI double centuries and most international sixes). NEVER attribute "Hitman" to Chris Gayle or anyone else.
+               - "Universe Boss": Exclusively refers to CHRIS GAYLE.
+               - "King of Cricket" / "King Kohli": Refers to VIRAT KOHLI (or Sir Vivian Richards). Sir Donald Bradman is "The Don" or "Sir Don".
+               - Virat Kohli Nicknames: "King Kohli", "Cheeku" / "Chiku", "Run Machine", "Chase Master". NEVER attribute "Viru" to Virat Kohli ("Viru" is VIRENDER SEHWAG!).
+               - "Mr. 360": Refers to AB DE VILLIERS (and Suryakumar Yadav in T20s).
                - Indian Cricket Team Captain: Rohit Sharma is the Test and ODI Captain (led India to the 2024 T20 World Cup title); Suryakumar Yadav is the T20I Captain. Virat Kohli stepped down as captain in 2021-2022.
                - NO ROBOTIC META-PHRASES: NEVER output robotic intro phrases like "Based on the retrieved information", "Considering the documents retrieved", or "Here's the key details". Answer naturally, directly, and authoritatively.
 

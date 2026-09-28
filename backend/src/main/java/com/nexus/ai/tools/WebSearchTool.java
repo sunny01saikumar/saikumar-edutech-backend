@@ -65,6 +65,11 @@ public class WebSearchTool implements Tool {
         if (cleaned.equalsIgnoreCase("ssc") || lowerRaw.equals("ssc") || lowerRaw.equals("tell me about ssc") || lowerRaw.equals("what is ssc")) {
             return "Staff Selection Commission SSC 10th Board Exam SSC Napoli";
         }
+        if (lowerRaw.contains("hitman") || lowerRaw.contains("hit man")) {
+            if (lowerRaw.contains("cricket") || lowerRaw.contains("who is") || lowerRaw.contains("player") || lowerRaw.contains("called") || lowerRaw.contains("known")) {
+                return "Rohit Sharma Hitman Indian cricket team captain";
+            }
+        }
         if (rawQuery.toLowerCase().contains("collected") || rawQuery.toLowerCase().contains("collection") || rawQuery.toLowerCase().contains("box office")) {
             if (!cleaned.toLowerCase().contains("box office") && !cleaned.toLowerCase().contains("collection")) {
                 cleaned += " box office collection";
