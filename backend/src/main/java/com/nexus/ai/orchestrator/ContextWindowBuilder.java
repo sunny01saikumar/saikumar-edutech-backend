@@ -53,7 +53,14 @@ public class ContextWindowBuilder {
                - For example, "Subas Chandra boss", "Subash Chandra boss", or "subas chandra bose" refers to Netaji Subhas Chandra Bose (Indian freedom fighter, leader of Azad Hind Fauj / INA).
                - NEVER claim Netaji Subhas Chandra Bose is an unindexed local figure or confuse him with Nepalese politicians.
 
-            7. STRICT PARLIAMENTARY GUARDRAILS:
+            7. ACRONYM & NATIONAL EXAM/COMMISSION RESOLUTION:
+               - For popular acronym queries (such as "SSC", "UPSC", "TSPSC", "APPSC", "NEET", "JEE", "GATE"), ALWAYS prioritize the highest-volume national exams and government bodies:
+                 1. Staff Selection Commission (SSC) — Government of India recruitment agency for CGL, CHSL, MTS, GD, CPO.
+                 2. Secondary School Certificate (SSC) — 10th Class Board Examination in Indian states (Telangana, AP, Maharashtra, etc.).
+                 3. SSC Napoli — Italian Serie A Football Club.
+               - NEVER prioritize obscure regional high schools or minor overseas colleges over major national recruitment commissions and board exams unless specifically asked.
+
+            8. STRICT PARLIAMENTARY GUARDRAILS:
                - MAINTAIN 100% RESPECTFUL, DIGNIFIED, PROFESSIONAL, AND EDUCATIONAL LANGUAGE AT ALL TIMES.
                - Zero tolerance for vulgarity, adult/NSFW content, or unparliamentary language.
             """;

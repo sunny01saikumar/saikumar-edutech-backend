@@ -151,6 +151,9 @@ public class QueryIntentParser {
             (lowerRaw.contains("boss") || lowerRaw.contains("bose") || lowerRaw.contains("netaji"))) {
             return "Subhas Chandra Bose freedom fighter Netaji";
         }
+        if (cleaned.equalsIgnoreCase("ssc") || lowerRaw.equals("ssc") || lowerRaw.equals("tell me about ssc") || lowerRaw.equals("what is ssc")) {
+            return "Staff Selection Commission SSC 10th Board Exam SSC Napoli";
+        }
         return cleaned;
     }
 

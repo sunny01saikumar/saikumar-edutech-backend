@@ -62,6 +62,9 @@ public class WebSearchTool implements Tool {
             (lowerRaw.contains("boss") || lowerRaw.contains("bose") || lowerRaw.contains("netaji"))) {
             return "Subhas Chandra Bose freedom fighter Netaji";
         }
+        if (cleaned.equalsIgnoreCase("ssc") || lowerRaw.equals("ssc") || lowerRaw.equals("tell me about ssc") || lowerRaw.equals("what is ssc")) {
+            return "Staff Selection Commission SSC 10th Board Exam SSC Napoli";
+        }
         if (rawQuery.toLowerCase().contains("collected") || rawQuery.toLowerCase().contains("collection") || rawQuery.toLowerCase().contains("box office")) {
             if (!cleaned.toLowerCase().contains("box office") && !cleaned.toLowerCase().contains("collection")) {
                 cleaned += " box office collection";
