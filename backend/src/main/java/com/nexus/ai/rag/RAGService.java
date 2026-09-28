@@ -94,6 +94,9 @@ public class RAGService {
         String lower = content.toLowerCase();
         if (lower.contains("no direct web search results found") ||
             lower.contains("is not globally indexed") ||
+            lower.contains("virat kohli is the current captain") ||
+            lower.contains("virat kohli is known as viru") ||
+            lower.contains("bradman is known as king of cricket") ||
             lower.contains("cat vamsi") ||
             lower.contains("bookmyshow") ||
             lower.contains("warangal district")) {

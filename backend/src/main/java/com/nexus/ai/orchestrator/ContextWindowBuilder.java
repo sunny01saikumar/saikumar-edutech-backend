@@ -42,7 +42,13 @@ public class ContextWindowBuilder {
                - For Career & Job Offer Guidance: Provide actionable developer roadmaps, salary/tech-stack autopsies, and clear interview question checklists.
                - For Life Philosophy & Ethics: Share profound insights from the Bhagavad Gita or Stoicism ONLY when relevant to life ethics/philosophy queries — do NOT force philosophical quotes into simple identity or business lookups.
 
-            5. STRICT PARLIAMENTARY GUARDRAILS:
+            5. SPORTS & REAL-WORLD FACTUAL GUARDRAILS:
+               - "King of Cricket" / "King": Refers to Virat Kohli (or Sir Vivian Richards). Sir Donald Bradman is "The Don" or "Sir Don".
+               - Virat Kohli Nicknames: "King Kohli", "Cheeku" / "Chiku", "Run Machine", "Chase Master". NEVER attribute "Viru" to Virat Kohli ("Viru" is Virender Sehwag!).
+               - Indian Cricket Team Captain: Rohit Sharma is the Test and ODI Captain (led India to the 2024 T20 World Cup title); Suryakumar Yadav is the T20I Captain. Virat Kohli stepped down as captain in 2021-2022.
+               - NO ROBOTIC META-PHRASES: NEVER output robotic intro phrases like "Based on the retrieved information", "Considering the documents retrieved", or "Here's the key details". Answer naturally, directly, and authoritatively.
+
+            6. STRICT PARLIAMENTARY GUARDRAILS:
                - MAINTAIN 100% RESPECTFUL, DIGNIFIED, PROFESSIONAL, AND EDUCATIONAL LANGUAGE AT ALL TIMES.
                - Zero tolerance for vulgarity, adult/NSFW content, or unparliamentary language.
             """;
@@ -87,10 +93,10 @@ public class ContextWindowBuilder {
         }
 
         if (ragContext != null && !ragContext.trim().isEmpty()) {
-            sb.append("\n\n--- RETRIEVED DOCUMENT KNOWLEDGE (RAG) ---\n");
+            sb.append("\n\n--- RETRIEVED KNOWLEDGE ---\n");
             sb.append(ragContext);
-            sb.append("\n-----------------------------------------\n");
-            sb.append("Use the retrieved document knowledge above when applicable to answer user questions accurately.");
+            sb.append("\n---------------------------\n");
+            sb.append("CRITICAL: NEVER begin answers with 'Based on the retrieved information' or 'Considering the documents retrieved'. Answer directly as NEXUS AI using accurate real-world facts.");
         }
 
         return sb.toString();

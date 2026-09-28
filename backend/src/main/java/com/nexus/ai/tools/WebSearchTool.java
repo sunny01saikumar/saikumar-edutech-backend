@@ -56,6 +56,7 @@ public class WebSearchTool implements Tool {
                 .replaceAll("(?i)^(what is the exactly collected by|what is the collection of|what is the box office collection of|how much was collected by|how much did|what is the total collection of|exactly collected by|box office collection of|what is the special of|what is the specialty of|what is special about|what is|tell me about|explain me about|explain me abot|explain|where is|who is|how does|what are the|search web for|search for|about|special of|specialty of)\\s+", "")
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
+        cleaned = cleaned.replaceAll("(?i)\\bcaption\\b", "captain");
         if (rawQuery.toLowerCase().contains("collected") || rawQuery.toLowerCase().contains("collection") || rawQuery.toLowerCase().contains("box office")) {
             if (!cleaned.toLowerCase().contains("box office") && !cleaned.toLowerCase().contains("collection")) {
                 cleaned += " box office collection";
@@ -63,6 +64,11 @@ public class WebSearchTool implements Tool {
         }
         if (rawQuery.toLowerCase().contains("channel") && !cleaned.toLowerCase().contains("youtube")) {
             cleaned += " YouTube channel";
+        }
+        if ((cleaned.toLowerCase().contains("captain") || rawQuery.toLowerCase().contains("captain") || rawQuery.toLowerCase().contains("caption")) && cleaned.toLowerCase().contains("indian team")) {
+            if (!cleaned.toLowerCase().contains("cricket")) {
+                cleaned += " cricket team";
+            }
         }
         return cleaned.isEmpty() ? rawQuery.trim() : cleaned;
     }

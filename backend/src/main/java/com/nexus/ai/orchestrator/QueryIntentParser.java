@@ -141,10 +141,11 @@ public class QueryIntentParser {
 
     private String extractCleanKeywords(String raw) {
         if (raw == null) return "";
-        return raw.trim()
+        String cleaned = raw.trim()
                 .replaceAll("(?i)^(what is|what are|where is|where are|who is|who are|when is|when did|how is|how does|why is|why does|tell me about|explain me about|explain me abot|explain|search web for|search for|information on)\\s+", "")
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
+        return cleaned.replaceAll("(?i)\\bcaption\\b", "captain");
     }
 
     private List<String> buildTargetedQueries(String keywords, QueryDomain domain, QuestionTag tag) {
