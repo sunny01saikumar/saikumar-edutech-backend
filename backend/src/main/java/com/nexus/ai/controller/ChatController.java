@@ -61,9 +61,18 @@ public class ChatController {
         }
 
         return aiOrchestrator.processStreamingChat(message, conversationId, provider, model, systemPrompt, customApiKey)
-                .map(token -> ServerSentEvent.<String>builder()
-                        .data(token)
-                        .build());
+                .map(token -> {
+                    try {
+                        String encoded = java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8.name());
+                        return ServerSentEvent.<String>builder()
+                                .data(encoded)
+                                .build();
+                    } catch (Exception e) {
+                        return ServerSentEvent.<String>builder()
+                                .data(token)
+                                .build();
+                    }
+                });
     }
 
     @GetMapping("/conversations")

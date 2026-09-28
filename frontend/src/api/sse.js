@@ -42,8 +42,14 @@ export function streamChatMessage({ message, conversationId, provider, model, sy
 
         for (const line of lines) {
           if (line.startsWith('data:')) {
-            const token = line.substring(5);
-            if (onToken) onToken(token);
+            const rawToken = line.substring(5);
+            let decodedToken = rawToken;
+            try {
+              decodedToken = decodeURIComponent(rawToken.replace(/\+/g, '%20'));
+            } catch (e) {
+              decodedToken = rawToken;
+            }
+            if (onToken) onToken(decodedToken);
           }
         }
 
