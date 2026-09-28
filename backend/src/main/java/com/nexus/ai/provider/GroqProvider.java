@@ -305,9 +305,9 @@ public class GroqProvider implements AIProvider {
         }
 
         body.put("messages", messages);
-        if (request.getTemperature() != null) {
-            body.put("temperature", request.getTemperature());
-        }
+        body.put("temperature", request.getTemperature() != null ? request.getTemperature() : 0.4);
+        body.put("frequency_penalty", 0.2);
+        body.put("presence_penalty", 0.1);
         if (request.getMaxTokens() != null) {
             body.put("max_tokens", request.getMaxTokens());
         }
