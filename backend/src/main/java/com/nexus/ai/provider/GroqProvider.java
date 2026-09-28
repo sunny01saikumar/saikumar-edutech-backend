@@ -31,7 +31,7 @@ public class GroqProvider implements AIProvider {
     @Value("${nexus.ai.openai.api-key:}")
     private String openaiEnvApiKey;
 
-    @Value("${nexus.ai.groq.model:llama-3.1-8b-instant}")
+    @Value("${nexus.ai.groq.model:qwen-2.5-coder-32b}")
     private String defaultModel;
 
     @Value("${nexus.ai.groq.base-url:https://api.groq.com/openai/v1}")
@@ -121,10 +121,10 @@ public class GroqProvider implements AIProvider {
         }
 
         List<String> popularDefaults = List.of(
+            "qwen-2.5-coder-32b",
+            "deepseek-r1-distill-qwen-32b",
             "llama-3.3-70b-versatile",
             "deepseek-r1-distill-llama-70b",
-            "deepseek-r1-distill-qwen-32b",
-            "qwen-2.5-coder-32b",
             "llama-3.1-8b-instant",
             "llama3-70b-8192",
             "llama3-8b-8192",

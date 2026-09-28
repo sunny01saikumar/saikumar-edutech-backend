@@ -98,11 +98,9 @@ public class ModelRouter {
         switch (providerName.toLowerCase()) {
             case "groq":
                 if ("reasoning".equals(category)) {
-                    return "deepseek-r1-distill-llama-70b";
-                } else if ("coding".equals(category)) {
-                    return "qwen-2.5-coder-32b";
+                    return "deepseek-r1-distill-qwen-32b";
                 } else {
-                    return "llama-3.3-70b-versatile";
+                    return "qwen-2.5-coder-32b";
                 }
             case "openai":
                 return "coding".equals(category) || "reasoning".equals(category) ? "gpt-4o" : "gpt-4o-mini";
