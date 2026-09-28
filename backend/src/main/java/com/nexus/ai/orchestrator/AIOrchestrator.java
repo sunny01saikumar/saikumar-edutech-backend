@@ -58,21 +58,27 @@ public class AIOrchestrator {
         // 0. Security Shield Prompt Sanitization
         String safePrompt = securityShield.sanitizePrompt(prompt);
 
-        // 1. Resolve Multi-Turn Pronouns & Context from Past Messages
+        // 1. Resolve Multi-Turn Pronouns ONLY when explicit pronouns exist in prompt
         String resolvedSearchPrompt = safePrompt;
-        if (conversationId != null && !conversationId.isEmpty()) {
+        String lowerPrompt = safePrompt.toLowerCase();
+        boolean hasPronoun = lowerPrompt.matches(".*\\b(he|him|his|she|her|it|they|them|this|that|himself|herself)\\b.*");
+
+        if (hasPronoun && conversationId != null && !conversationId.isEmpty()) {
             try {
                 List<Message> history = conversationService.getMessagesForConversation(conversationId);
                 if (history != null && history.size() > 1) {
-                    // Extract previous assistant or user message to resolve pronouns (he, she, it, they, his, him)
+                    // Extract previous assistant or user message subject to resolve pronouns
                     for (int i = history.size() - 2; i >= 0; i--) {
                         Message prevMsg = history.get(i);
                         if (prevMsg.getContent() != null && !prevMsg.getContent().trim().isEmpty()) {
                             String prevText = prevMsg.getContent().replaceAll("[\\r\\n]", " ").trim();
-                            if (prevText.length() > 200) {
-                                prevText = prevText.substring(0, 200);
+                            int periodIdx = prevText.indexOf('.');
+                            if (periodIdx > 10 && periodIdx < 80) {
+                                prevText = prevText.substring(0, periodIdx);
+                            } else if (prevText.length() > 80) {
+                                prevText = prevText.substring(0, 80);
                             }
-                            resolvedSearchPrompt = safePrompt + " (Context: " + prevText + ")";
+                            resolvedSearchPrompt = safePrompt + " " + prevText;
                             break;
                         }
                     }
