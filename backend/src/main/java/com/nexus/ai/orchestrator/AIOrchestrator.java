@@ -149,13 +149,15 @@ public class AIOrchestrator {
 
                         AVAILABLE TOOLS YOU CAN INVOKE:
                         1. TOOL: file_reader
-                           ARGS: {"path": "relative/or/full/file/path"}
-                        2. TOOL: code_executor
-                           ARGS: {"targetFile": "path/to/file", "content": "complete new code content", "overwrite": true}
-                        3. TOOL: git
-                           ARGS: {"action": "status" | "commit" | "push", "message": "commit message"}
-                        4. TOOL: deploy
-                           ARGS: {"target": "git_push" | "maven_build" | "docker_build" | "deploy_webhook"}
+                           ARGS: {"filePath": "./"} or {"filePath": "backend/src/main/resources/application.yml"}
+                        2. TOOL: file_writer
+                           ARGS: {"filePath": "path/to/file", "content": "complete updated file content"}
+                        3. TOOL: code_executor
+                           ARGS: {"command": "mvnw.cmd test" or "npm run build"}
+                        4. TOOL: git
+                           ARGS: {"subcommand": "status" or "log -n 5"}
+                        5. TOOL: deploy
+                           ARGS: {"target": "git_push" or "maven_build" or "deploy_webhook"}
 
                         HOW TO INVOKE A TOOL:
                         To use any tool, output EXACTLY:

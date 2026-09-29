@@ -34,7 +34,18 @@ public class GitTool implements Tool {
     @Override
     public ToolCall execute(Map<String, Object> arguments) {
         long start = System.currentTimeMillis();
-        String subcommand = String.valueOf(arguments.get("subcommand"));
+        String subcommand = null;
+        if (arguments.containsKey("subcommand") && arguments.get("subcommand") != null && !String.valueOf(arguments.get("subcommand")).equalsIgnoreCase("null")) {
+            subcommand = String.valueOf(arguments.get("subcommand"));
+        } else if (arguments.containsKey("action") && arguments.get("action") != null && !String.valueOf(arguments.get("action")).equalsIgnoreCase("null")) {
+            subcommand = String.valueOf(arguments.get("action"));
+        } else if (arguments.containsKey("command") && arguments.get("command") != null && !String.valueOf(arguments.get("command")).equalsIgnoreCase("null")) {
+            subcommand = String.valueOf(arguments.get("command"));
+        }
+
+        if (subcommand == null || subcommand.trim().isEmpty() || subcommand.equalsIgnoreCase("null")) {
+            subcommand = "status";
+        }
 
         try {
             boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
@@ -57,12 +68,17 @@ public class GitTool implements Tool {
             }
 
             p.waitFor();
+            String resultStr = output.toString().trim();
+            if (resultStr.contains("git: not found") || resultStr.contains("command not found")) {
+                resultStr = "⚠️ Git CLI is not installed on the host environment (Render Linux container). Workspace files are modified locally. Use Render GitHub automatic deployment triggers or Webhooks for automated release updates.";
+            }
+
             return ToolCall.builder()
                     .id(UUID.randomUUID().toString())
                     .toolName(getName())
                     .arguments(arguments)
-                    .result(output.toString())
-                    .success(p.exitValue() == 0)
+                    .result(resultStr)
+                    .success(p.exitValue() == 0 && !resultStr.contains("not found"))
                     .executionTimeMs(System.currentTimeMillis() - start)
                     .build();
 
@@ -71,7 +87,7 @@ public class GitTool implements Tool {
                     .id(UUID.randomUUID().toString())
                     .toolName(getName())
                     .arguments(arguments)
-                    .result("Git tool error: " + e.getMessage())
+                    .result("Git tool notice: Git CLI is unavailable on host container (" + e.getMessage() + "). Workspace edits are saved to disk.")
                     .success(false)
                     .executionTimeMs(System.currentTimeMillis() - start)
                     .build();
