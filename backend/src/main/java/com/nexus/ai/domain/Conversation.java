@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 public class Conversation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(nullable = false)
@@ -37,6 +36,9 @@ public class Conversation {
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
+        if (id == null || id.trim().isEmpty()) {
+            id = java.util.UUID.randomUUID().toString();
+        }
     }
 
     @PreUpdate

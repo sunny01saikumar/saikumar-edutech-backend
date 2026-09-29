@@ -24,17 +24,20 @@ public class ConversationService {
 
     @Transactional
     public Conversation getOrCreateConversation(String conversationId, String firstUserMessage) {
-        if (conversationId != null && !conversationId.isEmpty()) {
-            return conversationRepository.findById(conversationId).orElseGet(() -> createNewConversation(firstUserMessage));
+        if (conversationId != null && !conversationId.trim().isEmpty()) {
+            String cleanId = conversationId.trim();
+            return conversationRepository.findById(cleanId)
+                    .orElseGet(() -> createNewConversation(cleanId, firstUserMessage));
         }
-        return createNewConversation(firstUserMessage);
+        return createNewConversation(null, firstUserMessage);
     }
 
-    private Conversation createNewConversation(String titlePrompt) {
+    private Conversation createNewConversation(String customId, String titlePrompt) {
         String title = (titlePrompt != null && !titlePrompt.trim().isEmpty())
                 ? (titlePrompt.length() > 30 ? titlePrompt.substring(0, 30) + "..." : titlePrompt)
                 : "New Chat";
         Conversation conv = Conversation.builder()
+                .id(customId != null && !customId.trim().isEmpty() ? customId.trim() : null)
                 .title(title)
                 .build();
         return conversationRepository.save(conv);
