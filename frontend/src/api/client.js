@@ -35,7 +35,7 @@ export async function sendChatMessage({ message, conversationId, provider, model
 
   const res = await fetch('/api/ai/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ message, conversationId, provider, model, systemPrompt, apiKey: effectiveKey })
   });
   

@@ -26,7 +26,9 @@ public class ChatController {
     }
 
     @PostMapping("/chat")
-    public AiResponse chat(@RequestBody Map<String, String> request) {
+    public AiResponse chat(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody Map<String, String> request) {
         String message = request.get("message");
         String conversationId = request.get("conversationId");
         String provider = request.get("provider");
@@ -41,11 +43,13 @@ public class ChatController {
             throw new IllegalArgumentException("Message content cannot be empty.");
         }
 
-        return aiOrchestrator.processChat(message, conversationId, provider, model, systemPrompt, customApiKey);
+        return aiOrchestrator.processChat(message, conversationId, provider, model, systemPrompt, customApiKey, authHeader);
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chatStream(@RequestBody Map<String, String> request) {
+    public Flux<ServerSentEvent<String>> chatStream(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody Map<String, String> request) {
         String message = request.get("message");
         String conversationId = request.get("conversationId");
         String provider = request.get("provider");
@@ -60,7 +64,7 @@ public class ChatController {
             return Flux.error(new IllegalArgumentException("Message content cannot be empty."));
         }
 
-        return aiOrchestrator.processStreamingChat(message, conversationId, provider, model, systemPrompt, customApiKey)
+        return aiOrchestrator.processStreamingChat(message, conversationId, provider, model, systemPrompt, customApiKey, authHeader)
                 .map(token -> {
                     try {
                         String encoded = java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8.name());

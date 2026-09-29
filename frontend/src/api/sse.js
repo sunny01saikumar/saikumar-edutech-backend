@@ -9,9 +9,15 @@ export function streamChatMessage({ message, conversationId, provider, model, sy
     }
   }
 
+  const token = localStorage.getItem('nexus_token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   fetch('/api/ai/chat/stream', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ message, conversationId, provider, model, systemPrompt, apiKey: effectiveKey }),
     signal
   })

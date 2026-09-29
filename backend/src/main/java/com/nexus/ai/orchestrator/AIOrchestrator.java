@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,7 @@ public class AIOrchestrator {
     private final QuotaService quotaService;
     private final com.nexus.ai.orchestrator.QueryIntentParser queryIntentParser;
     private final com.nexus.ai.security.SecurityShield securityShield;
+    private final com.nexus.ai.security.JwtUtil jwtUtil;
 
     public AIOrchestrator(ModelRouter modelRouter,
                           ContextWindowBuilder contextWindowBuilder,
@@ -40,7 +43,8 @@ public class AIOrchestrator {
                           ToolRegistry toolRegistry,
                           QuotaService quotaService,
                           com.nexus.ai.orchestrator.QueryIntentParser queryIntentParser,
-                          com.nexus.ai.security.SecurityShield securityShield) {
+                          com.nexus.ai.security.SecurityShield securityShield,
+                          com.nexus.ai.security.JwtUtil jwtUtil) {
         this.modelRouter = modelRouter;
         this.contextWindowBuilder = contextWindowBuilder;
         this.conversationService = conversationService;
@@ -50,6 +54,7 @@ public class AIOrchestrator {
         this.quotaService = quotaService;
         this.queryIntentParser = queryIntentParser;
         this.securityShield = securityShield;
+        this.jwtUtil = jwtUtil;
     }
 
     private String gatherAndLearnContext(String prompt, String conversationId) {
@@ -67,7 +72,6 @@ public class AIOrchestrator {
             try {
                 List<Message> history = conversationService.getMessagesForConversation(conversationId);
                 if (history != null && history.size() > 1) {
-                    // Extract previous assistant or user message subject to resolve pronouns
                     for (int i = history.size() - 2; i >= 0; i--) {
                         Message prevMsg = history.get(i);
                         if (prevMsg.getContent() != null && !prevMsg.getContent().trim().isEmpty()) {
@@ -108,8 +112,6 @@ public class AIOrchestrator {
                                     .append(intent.getDomain()).append(", Tag: ").append(intent.getQuestionTag()).append(") ---\n")
                                     .append(searchResult)
                                     .append("\n--------------------------------------\n");
-
-                            // Append live web search data to immediate context window (RAG vector store is reserved for explicit admin uploads)
                             break;
                         }
                     }
@@ -122,11 +124,149 @@ public class AIOrchestrator {
         return combinedContext.toString().trim();
     }
 
+    private boolean isCodingOrDeployIntent(String prompt) {
+        if (prompt == null) return false;
+        String lower = prompt.toLowerCase();
+        return lower.contains("code") || lower.contains("fix") || lower.contains("deploy") ||
+               lower.contains("push") || lower.contains("git") || lower.contains("build") ||
+               lower.contains("refactor") || lower.contains("analysis") || lower.contains("file") ||
+               lower.contains("create") || lower.contains("java") || lower.contains("spring") ||
+               lower.contains("endpoint") || lower.contains("c:\\") || lower.contains("github") ||
+               lower.contains("disappearing") || lower.contains("repository") || lower.contains("nexus");
+    }
+
+    private Flux<String> executeAutonomousChatLoop(String prompt, String activeConvId, String traceId,
+                                                   AIProvider provider, ModelRouter.RouteDecision route,
+                                                   String customApiKey, String userEmail, String ragContext) {
+        log.info("[Trace {}] Starting Autonomous Coding Agent Loop for logged-in user [{}] in main chat", traceId, userEmail);
+
+        return Flux.create(emitter -> {
+            try {
+                List<AiRequest.ChatMessage> loopMessages = new ArrayList<>();
+                String agentSystemPrompt = """
+                        You are NEXUS Autonomous AI Senior Systems Architect & Lead Software Engineer.
+                        You are executing an autonomous coding, codebase file editing, git release, or deployment task directly in main chat for authenticated user: %s.
+
+                        AVAILABLE TOOLS YOU CAN INVOKE:
+                        1. TOOL: file_reader
+                           ARGS: {"path": "relative/or/full/file/path"}
+                        2. TOOL: code_executor
+                           ARGS: {"targetFile": "path/to/file", "content": "complete new code content", "overwrite": true}
+                        3. TOOL: git
+                           ARGS: {"action": "status" | "commit" | "push", "message": "commit message"}
+                        4. TOOL: deploy
+                           ARGS: {"target": "git_push" | "maven_build" | "docker_build" | "deploy_webhook"}
+
+                        HOW TO INVOKE A TOOL:
+                        To use any tool, output EXACTLY:
+                        TOOL: <tool_name>
+                        ARGS: {"arg1": "val1"}
+
+                        WHEN FINISHED:
+                        When all code edits, builds, git pushes, or analyses are completed, summarize your work clearly and end with:
+                        FINAL: <summary of final result>
+                        """.formatted(userEmail);
+
+                if (ragContext != null && !ragContext.trim().isEmpty()) {
+                    agentSystemPrompt += "\n\n--- RETRIEVED KNOWLEDGE ---\n" + ragContext;
+                }
+
+                loopMessages.add(AiRequest.ChatMessage.builder().role("system").content(agentSystemPrompt).build());
+                loopMessages.add(AiRequest.ChatMessage.builder().role("user").content(prompt).build());
+
+                int maxSteps = 6;
+                int step = 0;
+                boolean finished = false;
+                StringBuilder fullTranscript = new StringBuilder();
+
+                while (step < maxSteps && !finished && !emitter.isCancelled()) {
+                    step++;
+                    AiRequest request = AiRequest.builder()
+                            .conversationId(activeConvId)
+                            .systemPrompt(agentSystemPrompt)
+                            .messages(new ArrayList<>(loopMessages))
+                            .requestedProvider(provider.getProviderName())
+                            .requestedModel(route.getTargetModel())
+                            .customApiKey(customApiKey)
+                            .maxTokens(4096)
+                            .build();
+
+                    AiResponse response = provider.generate(request);
+                    String content = response.getContent() != null ? response.getContent().trim() : "";
+
+                    if (content.contains("TOOL:")) {
+                        String toolName = extractField(content, "TOOL:");
+                        String argsJson = extractField(content, "ARGS:");
+
+                        String toolHeader = "\n\n🛠️ **[NEXUS CODING AGENT - STEP " + step + "]**: Executing `" + toolName + "`...\n";
+                        emitter.next(toolHeader);
+                        fullTranscript.append(toolHeader);
+
+                        Map<String, Object> argsMap = parseArgs(argsJson);
+                        ToolCall toolCall = toolRegistry.executeTool(toolName, argsMap);
+
+                        String toolOutput = "```\n" + (toolCall != null ? toolCall.getResult() : "Tool executed successfully") + "\n```\n\n";
+                        emitter.next(toolOutput);
+                        fullTranscript.append(toolOutput);
+
+                        loopMessages.add(AiRequest.ChatMessage.builder().role("assistant").content(content).build());
+                        loopMessages.add(AiRequest.ChatMessage.builder().role("user").content("Tool output:\n" + toolOutput).build());
+                    } else if (content.contains("FINAL:")) {
+                        String finalSummary = content.substring(content.indexOf("FINAL:") + 6).trim();
+                        emitter.next(finalSummary);
+                        fullTranscript.append(finalSummary);
+                        finished = true;
+                    } else {
+                        emitter.next(content);
+                        fullTranscript.append(content);
+                        finished = true;
+                    }
+                }
+
+                conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, fullTranscript.toString(),
+                        provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+                emitter.complete();
+            } catch (Exception e) {
+                log.error("Autonomous agent chat loop failed: {}", e.getMessage(), e);
+                emitter.next("⚠️ NEXUS Coding Agent Error: " + e.getMessage());
+                emitter.complete();
+            }
+        });
+    }
+
+    private String extractField(String text, String prefix) {
+        int start = text.indexOf(prefix);
+        if (start == -1) return "";
+        int end = text.indexOf("\n", start);
+        if (end == -1) end = text.length();
+        return text.substring(start + prefix.length(), end).trim();
+    }
+
+    private Map<String, Object> parseArgs(String json) {
+        Map<String, Object> map = new HashMap<>();
+        if (json == null || json.isEmpty()) return map;
+        try {
+            String clean = json.replaceAll("[\\{\\}\"]", "");
+            String[] parts = clean.split(",");
+            for (String part : parts) {
+                String[] kv = part.split(":");
+                if (kv.length == 2) {
+                    map.put(kv[0].trim(), kv[1].trim());
+                }
+            }
+        } catch (Exception ignored) {}
+        return map;
+    }
+
     public AiResponse processChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt) {
-        return processChat(prompt, conversationId, providerName, modelName, systemPrompt, null);
+        return processChat(prompt, conversationId, providerName, modelName, systemPrompt, null, null);
     }
 
     public AiResponse processChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt, String customApiKey) {
+        return processChat(prompt, conversationId, providerName, modelName, systemPrompt, customApiKey, null);
+    }
+
+    public AiResponse processChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt, String customApiKey, String authHeader) {
         long start = System.currentTimeMillis();
         String traceId = traceService.createTraceId();
         String userId = "default-user";
@@ -188,10 +328,14 @@ public class AIOrchestrator {
     }
 
     public Flux<String> processStreamingChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt) {
-        return processStreamingChat(prompt, conversationId, providerName, modelName, systemPrompt, null);
+        return processStreamingChat(prompt, conversationId, providerName, modelName, systemPrompt, null, null);
     }
 
     public Flux<String> processStreamingChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt, String customApiKey) {
+        return processStreamingChat(prompt, conversationId, providerName, modelName, systemPrompt, customApiKey, null);
+    }
+
+    public Flux<String> processStreamingChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt, String customApiKey, String authHeader) {
         String traceId = traceService.createTraceId();
         String userId = "default-user";
 
@@ -210,6 +354,24 @@ public class AIOrchestrator {
             String alertMsg = "⚠️ NEXUS AI Provider Alert: Configured AI provider [" + provider.getProviderName() + "] is currently unavailable or unconfigured on the server. Please add GROQ_API_KEY or GEMINI_API_KEY in Render Environment Variables or enter a custom key in Settings.";
             conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, alertMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
             return Flux.just(alertMsg);
+        }
+
+        // Check Auth Status
+        String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
+        boolean isAuthenticated = userEmail != null && !userEmail.trim().isEmpty();
+
+        // Check if prompt is a Coding / File Editing / Git / Deployment Intent
+        boolean isCodingTask = isCodingOrDeployIntent(prompt);
+
+        if (isCodingTask) {
+            if (!isAuthenticated) {
+                String authRestrictedMsg = "🔒 **NEXUS Coding Agent Security Directive**:\n\nAutonomous Coding Agent capabilities (inspecting workspace files, editing source code, running build checks, executing Git commits, and triggering production deployments) are **restricted exclusively to logged-in users**.\n\nPlease log in to your NEXUS AI account to execute autonomous coding tasks directly in main chat!";
+                conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, authRestrictedMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+                return Flux.just(authRestrictedMsg);
+            } else {
+                // Execute Autonomous Coding Agent Loop Directly in Main Chat!
+                return executeAutonomousChatLoop(prompt, activeConvId, traceId, provider, route, customApiKey, userEmail, ragContext);
+            }
         }
 
         String fullSystemPrompt = contextWindowBuilder.buildSystemPrompt(systemPrompt, ragContext);
