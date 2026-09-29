@@ -151,7 +151,7 @@ public class AIOrchestrator {
                 List<AiRequest.ChatMessage> loopMessages = new ArrayList<>();
                 String agentSystemPrompt = """
                         You are NEXUS Autonomous AI Senior Systems Architect & Lead Software Engineer.
-                        You are executing an autonomous coding, codebase file editing, git release, or deployment task directly in main chat for authenticated user: %s.
+                        You are executing an autonomous coding, codebase file editing, git release, or deployment task directly in main chat for authenticated user: {{USER_EMAIL}}.
 
                         AVAILABLE TOOLS YOU CAN INVOKE:
                         1. TOOL: file_reader
@@ -186,7 +186,7 @@ public class AIOrchestrator {
                         WHEN FINISHED:
                         When all code edits, builds, git pushes, or analyses are completed, summarize your work clearly and end with:
                         FINAL: <summary of final result>
-                        """.formatted(userEmail);
+                        """.replace("{{USER_EMAIL}}", userEmail != null ? userEmail : "default-user");
 
                 if (ragContext != null && !ragContext.trim().isEmpty()) {
                     agentSystemPrompt += "\n\n--- RETRIEVED KNOWLEDGE ---\n" + ragContext;

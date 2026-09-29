@@ -53,7 +53,7 @@ public class AgentLoopEngine {
                 .role("system")
                 .content("""
                         You are an Autonomous AI Agent.
-                        Your task is: %s
+                        Your task is: {{GOAL}}
                         
                         You can use available tools by replying in format:
                         TOOL: <tool_name>
@@ -61,7 +61,7 @@ public class AgentLoopEngine {
                         
                         When the task is complete, reply with:
                         FINAL: <summary of final result>
-                        """.formatted(goal))
+                        """.replace("{{GOAL}}", goal != null ? goal : ""))
                 .build());
 
         messages.add(AiRequest.ChatMessage.builder()
