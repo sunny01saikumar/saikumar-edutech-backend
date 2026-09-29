@@ -32,6 +32,7 @@ public class AIOrchestrator {
     private final ToolRegistry toolRegistry;
     private final QuotaService quotaService;
     private final com.nexus.ai.orchestrator.QueryIntentParser queryIntentParser;
+    private final com.nexus.ai.provider.ProviderRegistry providerRegistry;
     private final com.nexus.ai.security.SecurityShield securityShield;
     private final com.nexus.ai.security.JwtUtil jwtUtil;
 
@@ -43,6 +44,7 @@ public class AIOrchestrator {
                           ToolRegistry toolRegistry,
                           QuotaService quotaService,
                           com.nexus.ai.orchestrator.QueryIntentParser queryIntentParser,
+                          com.nexus.ai.provider.ProviderRegistry providerRegistry,
                           com.nexus.ai.security.SecurityShield securityShield,
                           com.nexus.ai.security.JwtUtil jwtUtil) {
         this.modelRouter = modelRouter;
@@ -53,6 +55,7 @@ public class AIOrchestrator {
         this.toolRegistry = toolRegistry;
         this.quotaService = quotaService;
         this.queryIntentParser = queryIntentParser;
+        this.providerRegistry = providerRegistry;
         this.securityShield = securityShield;
         this.jwtUtil = jwtUtil;
     }
@@ -202,8 +205,30 @@ public class AIOrchestrator {
                             .maxTokens(4096)
                             .build();
 
-                    AiResponse response = provider.generate(request);
-                    String content = response.getContent() != null ? response.getContent().trim() : "";
+                    AiResponse response = null;
+                    try {
+                        response = provider.generate(request);
+                    } catch (Exception ex) {
+                        log.warn("Primary AI provider [{}] failed during agent step {}: {}. Attempting provider fallback...", provider.getProviderName(), step, ex.getMessage());
+                        AIProvider fallbackProvider = null;
+                        if (!"gemini".equalsIgnoreCase(provider.getProviderName()) && providerRegistry.getProvider("gemini") != null && providerRegistry.getProvider("gemini").isAvailable()) {
+                            fallbackProvider = providerRegistry.getProvider("gemini");
+                        } else if (!"openai".equalsIgnoreCase(provider.getProviderName()) && providerRegistry.getProvider("openai") != null && providerRegistry.getProvider("openai").isAvailable()) {
+                            fallbackProvider = providerRegistry.getProvider("openai");
+                        } else if (!"groq".equalsIgnoreCase(provider.getProviderName()) && providerRegistry.getProvider("groq") != null && providerRegistry.getProvider("groq").isAvailable()) {
+                            fallbackProvider = providerRegistry.getProvider("groq");
+                        }
+
+                        if (fallbackProvider != null) {
+                            request.setRequestedProvider(fallbackProvider.getProviderName());
+                            request.setRequestedModel(null);
+                            response = fallbackProvider.generate(request);
+                        } else {
+                            throw ex;
+                        }
+                    }
+
+                    String content = response != null && response.getContent() != null ? response.getContent().trim() : "";
 
                     if (content.contains("TOOL:")) {
                         String toolName = extractToolName(content);
