@@ -207,7 +207,9 @@ public class AIOrchestrator {
         AIProvider provider = route.getProvider();
 
         if (!provider.isAvailable() && (customApiKey == null || customApiKey.trim().isEmpty())) {
-            return Flux.error(new AIProviderUnavailableException(provider.getProviderName(), "Configured AI provider [" + provider.getProviderName() + "] is unavailable. Please enter an API key in settings."));
+            String alertMsg = "⚠️ NEXUS AI Provider Alert: Configured AI provider [" + provider.getProviderName() + "] is currently unavailable or unconfigured on the server. Please add GROQ_API_KEY or GEMINI_API_KEY in Render Environment Variables or enter a custom key in Settings.";
+            conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, alertMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+            return Flux.just(alertMsg);
         }
 
         String fullSystemPrompt = contextWindowBuilder.buildSystemPrompt(systemPrompt, ragContext);
@@ -237,9 +239,14 @@ public class AIOrchestrator {
                     traceService.logTrace(traceId, activeConvId, "STREAM_REQUEST", provider.getProviderName(), route.getTargetModel(),
                             0L, 0, 0, "SUCCESS", "Stream completed");
                 })
-                .doOnError(e -> {
+                .onErrorResume(e -> {
+                    log.error("Streaming error from provider [{}]: {}", provider.getProviderName(), e.getMessage());
                     traceService.logTrace(traceId, activeConvId, "STREAM_REQUEST", provider.getProviderName(), route.getTargetModel(),
                             0L, 0, 0, "FAILED", e.getMessage());
+                    String errorMsg = "⚠️ NEXUS AI Notice: Failed to generate streaming response from provider [" + provider.getProviderName() + "]. " +
+                            (e.getMessage() != null ? e.getMessage() : "Connection failed. Please check your API key settings.");
+                    conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, errorMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+                    return Flux.just(errorMsg);
                 });
     }
 }

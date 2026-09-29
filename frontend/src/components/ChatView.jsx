@@ -184,15 +184,15 @@ export default function ChatView({
       onError: (err) => {
         setIsGenerating(false);
         accumulatedRef.current = '';
+        const errMsg = err.message || err.data?.message || 'AI model request connection failed. Please check your API key in settings.';
+        setMessages((prev) => [
+          ...prev,
+          { role: 'ASSISTANT', content: `⚠️ Error: ${errMsg}` }
+        ]);
         if (err.data && err.data.error === 'TOKEN_QUOTA_EXCEEDED') {
           if (onQuotaExceeded) onQuotaExceeded();
         } else if (err.data && err.data.error === 'AI_PROVIDER_UNAVAILABLE') {
           setConfigError(err.data);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { role: 'ASSISTANT', content: 'Error: ' + (err.message || 'AI model request failed') }
-          ]);
         }
       },
       onComplete: async () => {
@@ -324,6 +324,13 @@ export default function ChatView({
                 <MessageItem message={msg} />
               </React.Fragment>
             ))}
+
+            {isGenerating && !streamingText && (
+              <div className="p-4 flex items-center gap-3 bg-gray-900/60 border-l-4 border-indigo-500 text-indigo-300 text-xs font-medium animate-pulse rounded-r-xl my-2 mx-4">
+                <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" />
+                <span>NEXUS AI is processing prompt and generating response...</span>
+              </div>
+            )}
 
             {streamingText && (
               <MessageItem
