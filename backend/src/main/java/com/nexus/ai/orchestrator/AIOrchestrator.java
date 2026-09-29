@@ -176,6 +176,13 @@ public class AIOrchestrator {
                           TOOL: file_reader
                           ARGS: {"filePath": "./"}
 
+                        FROM-SCRATCH CODE DEVELOPMENT & DEPLOYMENT WORKFLOW:
+                        - When the user provides a file path or asks to build/develop features from scratch:
+                          1. Inspect workspace directory using `TOOL: file_reader`.
+                          2. Generate 100% complete, compiling production code from scratch and write it to the specified file path using `TOOL: file_writer` (e.g. `{"filePath": "path/to/file", "content": "..."}`).
+                          3. Test compile the codebase using `TOOL: code_executor` (e.g. `{"command": "mvnw.cmd compile"}` or `{"command": "npm run build"}`).
+                          4. Push code changes and deploy the release using `TOOL: git` or `TOOL: deploy` (e.g. `{"target": "git_push", "commitMessage": "..."}`).
+
                         WHEN FINISHED:
                         When all code edits, builds, git pushes, or analyses are completed, summarize your work clearly and end with:
                         FINAL: <summary of final result>
