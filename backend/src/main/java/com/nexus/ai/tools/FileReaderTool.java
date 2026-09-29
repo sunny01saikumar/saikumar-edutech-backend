@@ -1,6 +1,8 @@
 package com.nexus.ai.tools;
 
 import com.nexus.ai.domain.ToolCall;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -11,6 +13,8 @@ import java.util.*;
 
 @Component
 public class FileReaderTool implements Tool {
+
+    private static final Logger log = LoggerFactory.getLogger(FileReaderTool.class);
 
     @Override
     public String getName() {
@@ -95,6 +99,19 @@ public class FileReaderTool implements Tool {
                         }
                     } catch (Exception ignored) {}
 
+                    // Fallback 2: Check GitHub remote repository (https://github.com/sunny01saikumar/Nexus)
+                    String githubContent = fetchFromGitHubRemote(pathStr);
+                    if (githubContent != null && !githubContent.trim().isEmpty()) {
+                        return ToolCall.builder()
+                                .id(UUID.randomUUID().toString())
+                                .toolName(getName())
+                                .arguments(arguments)
+                                .result("--- READ FROM GITHUB REPOSITORY (https://github.com/sunny01saikumar/Nexus/blob/main/" + pathStr + ") ---\n" + githubContent)
+                                .success(true)
+                                .executionTimeMs(System.currentTimeMillis() - start)
+                                .build();
+                    }
+
                     return ToolCall.builder()
                             .id(UUID.randomUUID().toString())
                             .toolName(getName())
@@ -108,11 +125,19 @@ public class FileReaderTool implements Tool {
 
             if (Files.isDirectory(path)) {
                 String tree = buildRecursiveDirectoryTree(path);
+                // If local container directory tree contains only compiled app.jar / data, fallback to GitHub Repository Tree
+                if (tree.contains("app.jar") && !tree.contains("backend") && !tree.contains("frontend")) {
+                    String remoteTree = fetchGitHubRepositoryTree();
+                    if (remoteTree != null && !remoteTree.trim().isEmpty()) {
+                        tree = remoteTree;
+                    }
+                }
+
                 return ToolCall.builder()
                         .id(UUID.randomUUID().toString())
                         .toolName(getName())
                         .arguments(arguments)
-                        .result("Project Workspace Directory Tree [" + path.toAbsolutePath() + "]:\n" + tree)
+                        .result("Project Workspace Repository Tree [https://github.com/sunny01saikumar/Nexus]:\n" + tree)
                         .success(true)
                         .executionTimeMs(System.currentTimeMillis() - start)
                         .build();
@@ -159,5 +184,79 @@ public class FileReaderTool implements Tool {
         } catch (Exception e) {
             return "Error walking directory: " + e.getMessage();
         }
+    }
+
+    private String fetchFromGitHubRemote(String pathStr) {
+        if (pathStr == null || pathStr.trim().isEmpty() || pathStr.equals("./") || pathStr.equals(".")) return null;
+        try {
+            String cleanPath = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
+            String githubUrl = "https://raw.githubusercontent.com/sunny01saikumar/Nexus/main/" + cleanPath;
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(5))
+                    .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
+                    .build();
+
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(githubUrl))
+                    .timeout(java.time.Duration.ofSeconds(8))
+                    .header("User-Agent", "NEXUS-AI-Engine")
+                    .GET()
+                    .build();
+
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200 && response.body() != null && !response.body().contains("404: Not Found")) {
+                String body = response.body();
+                if (body.length() > 10000) {
+                    body = body.substring(0, 10000) + "\n...[truncated to 10,000 characters]";
+                }
+                return body;
+            }
+        } catch (Exception e) {
+            log.warn("GitHub remote fallback fetch error for [{}]: {}", pathStr, e.getMessage());
+        }
+        return null;
+    }
+
+    private String fetchGitHubRepositoryTree() {
+        try {
+            String apiUrl = "https://api.github.com/repos/sunny01saikumar/Nexus/git/trees/main?recursive=1";
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(5))
+                    .build();
+
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(apiUrl))
+                    .timeout(java.time.Duration.ofSeconds(8))
+                    .header("User-Agent", "NEXUS-AI-Engine")
+                    .header("Accept", "application/vnd.github.v3+json")
+                    .GET()
+                    .build();
+
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200 && response.body() != null) {
+                String json = response.body();
+                List<String> paths = new ArrayList<>();
+                int idx = 0;
+                while ((idx = json.indexOf("\"path\":\"", idx)) != -1) {
+                    idx += 8;
+                    int end = json.indexOf("\"", idx);
+                    if (end != -1) {
+                        String p = json.substring(idx, end);
+                        if (!p.contains(".git") && !p.contains("target/") && !p.contains("node_modules/")) {
+                            paths.add(p);
+                        }
+                        idx = end;
+                    }
+                }
+                if (!paths.isEmpty()) {
+                    return String.join("\n", paths.subList(0, Math.min(paths.size(), 80)));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("GitHub repository tree fetch error: {}", e.getMessage());
+        }
+        return null;
     }
 }
