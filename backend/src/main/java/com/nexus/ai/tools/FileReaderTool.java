@@ -71,6 +71,30 @@ public class FileReaderTool implements Tool {
                 if (Files.exists(relativeToRoot)) {
                     path = relativeToRoot;
                 } else {
+                    // Fallback: Check if file exists inside JAR classpath
+                    String resourcePath = pathStr;
+                    if (resourcePath.contains("resources/")) {
+                        resourcePath = resourcePath.substring(resourcePath.indexOf("resources/") + 10);
+                    }
+                    if (resourcePath.startsWith("/")) resourcePath = resourcePath.substring(1);
+
+                    try (var is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+                        if (is != null) {
+                            String content = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                            if (content.length() > 10000) {
+                                content = content.substring(0, 10000) + "\n...[truncated to 10,000 characters]";
+                            }
+                            return ToolCall.builder()
+                                    .id(UUID.randomUUID().toString())
+                                    .toolName(getName())
+                                    .arguments(arguments)
+                                    .result("--- READ FROM JAR CLASSPATH [" + resourcePath + "] ---\n" + content)
+                                    .success(true)
+                                    .executionTimeMs(System.currentTimeMillis() - start)
+                                    .build();
+                        }
+                    } catch (Exception ignored) {}
+
                     return ToolCall.builder()
                             .id(UUID.randomUUID().toString())
                             .toolName(getName())
