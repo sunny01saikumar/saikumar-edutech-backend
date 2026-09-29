@@ -147,6 +147,9 @@ public class AIOrchestrator {
         if (prompt == null) return false;
         String lower = prompt.toLowerCase();
         return lower.contains("image") || lower.contains("picture") || lower.contains("photo") ||
+               lower.contains("phot") || lower.contains("pht") || lower.contains("pic") ||
+               lower.contains("pics") || lower.contains("img") || lower.contains("imgs") ||
+               lower.contains("foto") || lower.contains("fotos") || lower.contains("generate") ||
                lower.contains("video") || lower.contains("draw") || lower.contains("portrait") ||
                lower.contains("painting") || lower.contains("imagen") || lower.contains("dall-e") ||
                lower.contains("sora") || lower.contains("runway") || lower.contains("illustration");
@@ -168,7 +171,7 @@ public class AIOrchestrator {
 
     private String generateAdminMediaResponse(String prompt, String userEmail) {
         String cleanSubject = prompt;
-        cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|video|of|with|hd|portrait|realistic|real|photorealistic|in|mode)\\b", "").trim();
+        cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|of|with|hd|portrait|realistic|real|photorealistic|in|mode)\\b", "").trim();
         cleanSubject = cleanSubject.replaceAll("\\s+", " ").trim();
         if (cleanSubject.isEmpty()) {
             cleanSubject = prompt.trim();
@@ -176,20 +179,48 @@ public class AIOrchestrator {
 
         // Standardize famous figures & celebrity entity names for 100% accurate identification
         String lowerSubject = cleanSubject.toLowerCase();
-        if (lowerSubject.equals("samantha") || lowerSubject.contains("samantha")) {
+        if (lowerSubject.contains("kajal") || lowerSubject.contains("kjal")) {
+            cleanSubject = "Kajal Aggarwal Indian actress";
+        } else if (lowerSubject.contains("kajol")) {
+            cleanSubject = "Kajol Devgan Indian actress";
+        } else if (lowerSubject.contains("samantha")) {
             cleanSubject = "Samantha Ruth Prabhu Indian actress";
-        } else if (lowerSubject.equals("modi") || lowerSubject.contains("narendra modi")) {
+        } else if (lowerSubject.contains("rashmika")) {
+            cleanSubject = "Rashmika Mandanna Indian actress";
+        } else if (lowerSubject.contains("deepika")) {
+            cleanSubject = "Deepika Padukone Indian actress";
+        } else if (lowerSubject.contains("alia")) {
+            cleanSubject = "Alia Bhatt Indian actress";
+        } else if (lowerSubject.contains("katrina")) {
+            cleanSubject = "Katrina Kaif Indian actress";
+        } else if (lowerSubject.contains("nayanthara")) {
+            cleanSubject = "Nayanthara South Indian actress";
+        } else if (lowerSubject.contains("trisha")) {
+            cleanSubject = "Trisha Krishnan South Indian actress";
+        } else if (lowerSubject.contains("anushka")) {
+            cleanSubject = "Anushka Shetty Baahubali Indian actress";
+        } else if (lowerSubject.contains("modi")) {
             cleanSubject = "Narendra Modi Indian Prime Minister";
-        } else if (lowerSubject.equals("virat") || lowerSubject.contains("kohli") || lowerSubject.contains("kholi")) {
+        } else if (lowerSubject.contains("virat") || lowerSubject.contains("kohli") || lowerSubject.contains("kholi")) {
             cleanSubject = "Virat Kohli Indian Cricket Captain";
-        } else if (lowerSubject.equals("dhoni") || lowerSubject.contains("ms dhoni")) {
+        } else if (lowerSubject.contains("dhoni")) {
             cleanSubject = "MS Dhoni Indian Cricket Legend";
-        } else if (lowerSubject.equals("srk") || lowerSubject.contains("shah rukh")) {
+        } else if (lowerSubject.contains("srk") || lowerSubject.contains("shah rukh")) {
             cleanSubject = "Shah Rukh Khan Indian actor";
         } else if (lowerSubject.contains("prabhas")) {
             cleanSubject = "Prabhas Indian actor Baahubali";
         } else if (lowerSubject.contains("allu arjun")) {
             cleanSubject = "Allu Arjun Pushpa Indian actor";
+        } else if (lowerSubject.contains("pawan") || lowerSubject.contains("kalyan")) {
+            cleanSubject = "Pawan Kalyan Indian actor politician";
+        } else if (lowerSubject.contains("mahesh") || lowerSubject.contains("babu")) {
+            cleanSubject = "Mahesh Babu Indian actor";
+        } else if (lowerSubject.contains("ram charan")) {
+            cleanSubject = "Ram Charan RRR Indian actor";
+        } else if (lowerSubject.contains("ntr") || lowerSubject.contains("jr ntr")) {
+            cleanSubject = "Jr NTR RRR Indian actor";
+        } else if (lowerSubject.contains("rajini") || lowerSubject.contains("rajinikanth")) {
+            cleanSubject = "Superstar Rajinikanth Indian actor";
         }
 
         String richPrompt = "authentic high resolution real life photograph of " + cleanSubject + ", 8k resolution, crisp clear detail, natural camera lighting, true to life DSLR portrait, award winning photo";
