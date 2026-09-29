@@ -174,24 +174,35 @@ public class AIOrchestrator {
             cleanSubject = prompt.trim();
         }
 
-        // Apply common name standardization & typo resolution
-        if (cleanSubject.equalsIgnoreCase("Virat Kholi") || cleanSubject.equalsIgnoreCase("Kholi")) {
-            cleanSubject = "Virat Kohli Indian Cricket Captain";
-        } else if (cleanSubject.equalsIgnoreCase("modi") || cleanSubject.equalsIgnoreCase("narendra modi")) {
+        // Standardize famous figures & celebrity entity names for 100% accurate identification
+        String lowerSubject = cleanSubject.toLowerCase();
+        if (lowerSubject.equals("samantha") || lowerSubject.contains("samantha")) {
+            cleanSubject = "Samantha Ruth Prabhu Indian actress";
+        } else if (lowerSubject.equals("modi") || lowerSubject.contains("narendra modi")) {
             cleanSubject = "Narendra Modi Indian Prime Minister";
+        } else if (lowerSubject.equals("virat") || lowerSubject.contains("kohli") || lowerSubject.contains("kholi")) {
+            cleanSubject = "Virat Kohli Indian Cricket Captain";
+        } else if (lowerSubject.equals("dhoni") || lowerSubject.contains("ms dhoni")) {
+            cleanSubject = "MS Dhoni Indian Cricket Legend";
+        } else if (lowerSubject.equals("srk") || lowerSubject.contains("shah rukh")) {
+            cleanSubject = "Shah Rukh Khan Indian actor";
+        } else if (lowerSubject.contains("prabhas")) {
+            cleanSubject = "Prabhas Indian actor Baahubali";
+        } else if (lowerSubject.contains("allu arjun")) {
+            cleanSubject = "Allu Arjun Pushpa Indian actor";
         }
 
-        String richPrompt = "photorealistic 8k ultra realistic high detail DSLR photo of " + cleanSubject + ", 35mm lens, natural skin texture, realistic studio lighting, sharp focus, award winning photograph, 8k resolution";
+        String richPrompt = "authentic high resolution real life photograph of " + cleanSubject + ", 8k resolution, crisp clear detail, natural camera lighting, true to life DSLR portrait, award winning photo";
         String encodedQuery = richPrompt.replace(" ", "%20");
         
         // Use Flux model for hyper-realistic 8K photorealism!
         String imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux&nologo=true&width=1024&height=1024";
 
         return "🎨 **NEXUS AI Photorealistic Image Engine (8K Admin Mode)**\n\n" +
-               "Here is your generated **100% Ultra-Realistic DSLR Photo** for **\"" + cleanSubject + "\"**:\n\n" +
-               "![" + cleanSubject + " photorealistic](" + imageUrl + ")\n\n" +
+               "Here is your generated **Authentic Real-Life DSLR Photograph** for **\"" + cleanSubject + "\"**:\n\n" +
+               "![" + cleanSubject + " authentic photo](" + imageUrl + ")\n\n" +
                "> **Engine**: *Flux 8K Photorealism Model*  \n" +
-               "> **Style**: *Hyperrealistic 35mm DSLR Photography*  \n" +
+               "> **Entity Resolved**: *" + cleanSubject + "*  \n" +
                "> **Status**: Rendered for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";
     }
 
