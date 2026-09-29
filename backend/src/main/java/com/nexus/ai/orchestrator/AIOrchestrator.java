@@ -426,79 +426,85 @@ public class AIOrchestrator {
     }
 
     public Flux<String> processStreamingChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt, String customApiKey, String authHeader) {
-        String traceId = traceService.createTraceId();
-        String userId = "default-user";
+        try {
+            String traceId = traceService.createTraceId();
+            String userId = "default-user";
 
-        quotaService.checkAndEnforceQuota(userId);
+            quotaService.checkAndEnforceQuota(userId);
 
-        Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt);
-        String activeConvId = conversation.getId();
+            Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt);
+            String activeConvId = conversation.getId();
 
-        conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
+            conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
-        String ragContext = gatherAndLearnContext(prompt, activeConvId);
-        ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
-        AIProvider provider = route.getProvider();
+            String ragContext = gatherAndLearnContext(prompt, activeConvId);
+            ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
+            AIProvider provider = route.getProvider();
 
-        if (!provider.isAvailable() && (customApiKey == null || customApiKey.trim().isEmpty())) {
-            String alertMsg = "⚠️ NEXUS AI Provider Alert: Configured AI provider [" + provider.getProviderName() + "] is currently unavailable or unconfigured on the server. Please add GROQ_API_KEY or GEMINI_API_KEY in Render Environment Variables or enter a custom key in Settings.";
-            conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, alertMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
-            return Flux.just(alertMsg);
-        }
-
-        // Check Auth Status
-        String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
-        boolean isAuthenticated = userEmail != null && !userEmail.trim().isEmpty();
-
-        // Check if prompt is a Coding / File Editing / Git / Deployment Intent
-        boolean isCodingTask = isCodingOrDeployIntent(prompt);
-
-        if (isCodingTask) {
-            if (!isAuthenticated) {
-                String authRestrictedMsg = "🔒 **NEXUS Coding Agent Security Directive**:\n\nAutonomous Coding Agent capabilities (inspecting workspace files, editing source code, running build checks, executing Git commits, and triggering production deployments) are **restricted exclusively to logged-in users**.\n\nPlease log in to your NEXUS AI account to execute autonomous coding tasks directly in main chat!";
-                conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, authRestrictedMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
-                return Flux.just(authRestrictedMsg);
-            } else {
-                // Execute Autonomous Coding Agent Loop Directly in Main Chat!
-                return executeAutonomousChatLoop(prompt, activeConvId, traceId, provider, route, customApiKey, userEmail, ragContext);
+            if (!provider.isAvailable() && (customApiKey == null || customApiKey.trim().isEmpty())) {
+                String alertMsg = "⚠️ NEXUS AI Provider Alert: Configured AI provider [" + provider.getProviderName() + "] is currently unavailable or unconfigured on the server. Please add GROQ_API_KEY or GEMINI_API_KEY in Render Environment Variables or enter a custom key in Settings.";
+                conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, alertMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+                return Flux.just(alertMsg);
             }
+
+            // Check Auth Status
+            String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
+            boolean isAuthenticated = userEmail != null && !userEmail.trim().isEmpty();
+
+            // Check if prompt is a Coding / File Editing / Git / Deployment Intent
+            boolean isCodingTask = isCodingOrDeployIntent(prompt);
+
+            if (isCodingTask) {
+                if (!isAuthenticated) {
+                    String authRestrictedMsg = "🔒 **NEXUS Coding Agent Security Directive**:\n\nAutonomous Coding Agent capabilities (inspecting workspace files, editing source code, running build checks, executing Git commits, and triggering production deployments) are **restricted exclusively to logged-in users**.\n\nPlease log in to your NEXUS AI account to execute autonomous coding tasks directly in main chat!";
+                    conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, authRestrictedMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+                    return Flux.just(authRestrictedMsg);
+                } else {
+                    // Execute Autonomous Coding Agent Loop Directly in Main Chat!
+                    return executeAutonomousChatLoop(prompt, activeConvId, traceId, provider, route, customApiKey, userEmail, ragContext);
+                }
+            }
+
+            String fullSystemPrompt = contextWindowBuilder.buildSystemPrompt(systemPrompt, ragContext);
+            List<AiRequest.ChatMessage> messages = contextWindowBuilder.buildContextMessages(activeConvId, prompt, fullSystemPrompt, ragContext);
+
+            AiRequest request = AiRequest.builder()
+                    .conversationId(activeConvId)
+                    .systemPrompt(fullSystemPrompt)
+                    .messages(messages)
+                    .requestedProvider(provider.getProviderName())
+                    .requestedModel(route.getTargetModel())
+                    .customApiKey(customApiKey)
+                    .maxTokens(4096)
+                    .stream(true)
+                    .build();
+
+            StringBuilder fullAccumulatedText = new StringBuilder();
+
+            return provider.stream(request)
+                    .doOnNext(fullAccumulatedText::append)
+                    .doOnComplete(() -> {
+                        int estimatedTokens = Math.max(20, fullAccumulatedText.length() / 4);
+                        quotaService.deductTokens(userId, estimatedTokens);
+
+                        conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, fullAccumulatedText.toString(),
+                                provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+                        traceService.logTrace(traceId, activeConvId, "STREAM_REQUEST", provider.getProviderName(), route.getTargetModel(),
+                                0L, 0, 0, "SUCCESS", "Stream completed");
+                    })
+                    .onErrorResume(e -> {
+                        log.error("Streaming error from provider [{}]: {}", provider.getProviderName(), e.getMessage());
+                        traceService.logTrace(traceId, activeConvId, "STREAM_REQUEST", provider.getProviderName(), route.getTargetModel(),
+                                0L, 0, 0, "FAILED", e.getMessage());
+                        String errorMsg = "⚠️ NEXUS AI Notice: Failed to generate streaming response from provider [" + provider.getProviderName() + "]. " +
+                                (e.getMessage() != null ? e.getMessage() : "Connection failed. Please check your API key settings.");
+                        conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, errorMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
+                        return Flux.just(errorMsg);
+                    });
+        } catch (Exception e) {
+            log.error("Streaming chat setup error: {}", e.getMessage(), e);
+            String errorMsg = "⚠️ NEXUS AI Error: " + (e.getMessage() != null ? e.getMessage() : "Request processing failed.");
+            return Flux.just(errorMsg);
         }
-
-        String fullSystemPrompt = contextWindowBuilder.buildSystemPrompt(systemPrompt, ragContext);
-        List<AiRequest.ChatMessage> messages = contextWindowBuilder.buildContextMessages(activeConvId, prompt, fullSystemPrompt, ragContext);
-
-        AiRequest request = AiRequest.builder()
-                .conversationId(activeConvId)
-                .systemPrompt(fullSystemPrompt)
-                .messages(messages)
-                .requestedProvider(provider.getProviderName())
-                .requestedModel(route.getTargetModel())
-                .customApiKey(customApiKey)
-                .maxTokens(4096)
-                .stream(true)
-                .build();
-
-        StringBuilder fullAccumulatedText = new StringBuilder();
-
-        return provider.stream(request)
-                .doOnNext(fullAccumulatedText::append)
-                .doOnComplete(() -> {
-                    int estimatedTokens = Math.max(20, fullAccumulatedText.length() / 4);
-                    quotaService.deductTokens(userId, estimatedTokens);
-
-                    conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, fullAccumulatedText.toString(),
-                            provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
-                    traceService.logTrace(traceId, activeConvId, "STREAM_REQUEST", provider.getProviderName(), route.getTargetModel(),
-                            0L, 0, 0, "SUCCESS", "Stream completed");
-                })
-                .onErrorResume(e -> {
-                    log.error("Streaming error from provider [{}]: {}", provider.getProviderName(), e.getMessage());
-                    traceService.logTrace(traceId, activeConvId, "STREAM_REQUEST", provider.getProviderName(), route.getTargetModel(),
-                            0L, 0, 0, "FAILED", e.getMessage());
-                    String errorMsg = "⚠️ NEXUS AI Notice: Failed to generate streaming response from provider [" + provider.getProviderName() + "]. " +
-                            (e.getMessage() != null ? e.getMessage() : "Connection failed. Please check your API key settings.");
-                    conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, errorMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
-                    return Flux.just(errorMsg);
-                });
     }
 }

@@ -21,14 +21,25 @@ export function streamChatMessage({ message, conversationId, provider, model, sy
     body: JSON.stringify({ message, conversationId, provider, model, systemPrompt, apiKey: effectiveKey }),
     signal
   })
-  .then(response => {
+  .then(async response => {
     if (!response.ok) {
-      return response.json().then(errData => {
-        const err = new Error(errData.message || 'Streaming failed');
-        err.status = response.status;
-        err.data = errData;
-        throw err;
-      });
+      let errorText = `Server request failed (HTTP ${response.status})`;
+      try {
+        const errData = await response.json();
+        if (errData && errData.message) {
+          errorText = errData.message;
+        } else if (errData && errData.error) {
+          errorText = errData.error;
+        }
+      } catch (e) {
+        try {
+          const txt = await response.text();
+          if (txt && txt.trim()) errorText = txt.trim();
+        } catch (ignored) {}
+      }
+      const err = new Error(errorText);
+      err.status = response.status;
+      throw err;
     }
 
     const reader = response.body.getReader();
