@@ -186,27 +186,61 @@ public class FileReaderTool implements Tool {
         }
     }
 
+    private String getGitHubToken() {
+        String token = System.getenv("GITHUB_TOKEN");
+        if (token == null || token.trim().isEmpty()) token = System.getenv("GH_TOKEN");
+        if (token == null || token.trim().isEmpty()) token = System.getenv("GITHUB_PAT");
+        if (token == null || token.trim().isEmpty()) token = System.getenv("NEXUS_GITHUB_TOKEN");
+        if (token == null || token.trim().isEmpty()) token = System.getProperty("github.token");
+        return token != null ? token.trim() : null;
+    }
+
     private String fetchFromGitHubRemote(String pathStr) {
         if (pathStr == null || pathStr.trim().isEmpty() || pathStr.equals("./") || pathStr.equals(".")) return null;
         try {
             String cleanPath = pathStr.startsWith("/") ? pathStr.substring(1) : pathStr;
-            String githubUrl = "https://raw.githubusercontent.com/sunny01saikumar/Nexus/main/" + cleanPath;
+            String token = getGitHubToken();
 
+            // 1. Try GitHub REST API contents endpoint (supports private repositories with token)
+            String apiUrl = "https://api.github.com/repos/sunny01saikumar/Nexus/contents/" + cleanPath;
             java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
                     .connectTimeout(java.time.Duration.ofSeconds(5))
                     .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
                     .build();
 
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(githubUrl))
+            var reqBuilder = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(apiUrl))
                     .timeout(java.time.Duration.ofSeconds(8))
                     .header("User-Agent", "NEXUS-AI-Engine")
-                    .GET()
-                    .build();
+                    .header("Accept", "application/vnd.github.v3.raw");
 
-            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (token != null && !token.isEmpty()) {
+                reqBuilder.header("Authorization", "token " + token);
+            }
+
+            java.net.http.HttpResponse<String> response = client.send(reqBuilder.GET().build(), java.net.http.HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200 && response.body() != null && !response.body().contains("404: Not Found")) {
                 String body = response.body();
+                if (body.length() > 10000) {
+                    body = body.substring(0, 10000) + "\n...[truncated to 10,000 characters]";
+                }
+                return body;
+            }
+
+            // 2. Fallback to raw.githubusercontent.com
+            String rawUrl = "https://raw.githubusercontent.com/sunny01saikumar/Nexus/main/" + cleanPath;
+            var rawReqBuilder = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(rawUrl))
+                    .timeout(java.time.Duration.ofSeconds(8))
+                    .header("User-Agent", "NEXUS-AI-Engine");
+
+            if (token != null && !token.isEmpty()) {
+                rawReqBuilder.header("Authorization", "token " + token);
+            }
+
+            java.net.http.HttpResponse<String> rawResponse = client.send(rawReqBuilder.GET().build(), java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (rawResponse.statusCode() == 200 && rawResponse.body() != null && !rawResponse.body().contains("404: Not Found")) {
+                String body = rawResponse.body();
                 if (body.length() > 10000) {
                     body = body.substring(0, 10000) + "\n...[truncated to 10,000 characters]";
                 }
@@ -221,20 +255,23 @@ public class FileReaderTool implements Tool {
     private String fetchGitHubRepositoryTree() {
         try {
             String apiUrl = "https://api.github.com/repos/sunny01saikumar/Nexus/git/trees/main?recursive=1";
+            String token = getGitHubToken();
 
             java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
                     .connectTimeout(java.time.Duration.ofSeconds(5))
                     .build();
 
-            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+            var reqBuilder = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(apiUrl))
                     .timeout(java.time.Duration.ofSeconds(8))
                     .header("User-Agent", "NEXUS-AI-Engine")
-                    .header("Accept", "application/vnd.github.v3+json")
-                    .GET()
-                    .build();
+                    .header("Accept", "application/vnd.github.v3+json");
 
-            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (token != null && !token.isEmpty()) {
+                reqBuilder.header("Authorization", "token " + token);
+            }
+
+            java.net.http.HttpResponse<String> response = client.send(reqBuilder.GET().build(), java.net.http.HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200 && response.body() != null) {
                 String json = response.body();
                 List<String> paths = new ArrayList<>();
