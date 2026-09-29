@@ -7,7 +7,7 @@ spring:
   application:
     name: nexus-ai
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:${NEXUS_DB_PATH:./data}/nexusdb;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:${NEXUS_DB_PATH:./data}/nexusdb;AUTO_SERVER=TRUE}
     driverClassName: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
     username: ${SPRING_DATASOURCE_USERNAME:sa}
     password: ${SPRING_DATASOURCE_PASSWORD:}
