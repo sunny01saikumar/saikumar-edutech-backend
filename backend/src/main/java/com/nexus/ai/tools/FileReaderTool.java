@@ -107,20 +107,15 @@ public class FileReaderTool implements Tool {
             }
 
             if (Files.isDirectory(path)) {
-                try (var stream = Files.list(path)) {
-                    String list = stream.map(p -> p.getFileName().toString())
-                            .limit(50)
-                            .reduce((a, b) -> a + "\n" + b)
-                            .orElse("Empty directory");
-                    return ToolCall.builder()
-                            .id(UUID.randomUUID().toString())
-                            .toolName(getName())
-                            .arguments(arguments)
-                            .result("Directory contents for [" + path.toAbsolutePath() + "]:\n" + list)
-                            .success(true)
-                            .executionTimeMs(System.currentTimeMillis() - start)
-                            .build();
-                }
+                String tree = buildRecursiveDirectoryTree(path);
+                return ToolCall.builder()
+                        .id(UUID.randomUUID().toString())
+                        .toolName(getName())
+                        .arguments(arguments)
+                        .result("Project Workspace Directory Tree [" + path.toAbsolutePath() + "]:\n" + tree)
+                        .success(true)
+                        .executionTimeMs(System.currentTimeMillis() - start)
+                        .build();
             }
 
             String content = Files.readString(path);
@@ -146,6 +141,23 @@ public class FileReaderTool implements Tool {
                     .success(false)
                     .executionTimeMs(System.currentTimeMillis() - start)
                     .build();
+        }
+    }
+
+    private String buildRecursiveDirectoryTree(Path root) {
+        try (var stream = Files.walk(root, 4)) {
+            List<String> relativePaths = stream
+                    .filter(p -> !p.equals(root))
+                    .map(root::relativize)
+                    .map(Path::toString)
+                    .filter(p -> !p.contains(".git") && !p.contains("node_modules") && !p.contains("target") && !p.contains(".idea") && !p.contains(".mvn"))
+                    .limit(100)
+                    .collect(java.util.stream.Collectors.toList());
+
+            if (relativePaths.isEmpty()) return "Empty directory";
+            return String.join("\n", relativePaths);
+        } catch (Exception e) {
+            return "Error walking directory: " + e.getMessage();
         }
     }
 }
