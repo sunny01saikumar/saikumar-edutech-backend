@@ -141,6 +141,29 @@ public class AIOrchestrator {
                lower.contains("error") || lower.contains("patch");
     }
 
+    private boolean isMediaGenerationIntent(String prompt) {
+        if (prompt == null) return false;
+        String lower = prompt.toLowerCase();
+        return lower.contains("generate image") || lower.contains("create image") ||
+               lower.contains("draw image") || lower.contains("make image") ||
+               lower.contains("generate video") || lower.contains("create video") ||
+               lower.contains("make video") || lower.contains("render image") ||
+               lower.contains("generate picture") || lower.contains("create picture") ||
+               lower.contains("generate photo") || lower.contains("create photo") ||
+               lower.contains("imagen") || lower.contains("dall-e") ||
+               lower.contains("sora") || lower.contains("runway") ||
+               lower.contains("image generator") || lower.contains("video generator");
+    }
+
+    private boolean isAdminUser(String userEmail, String authHeader) {
+        if (userEmail == null) return false;
+        String role = jwtUtil != null ? jwtUtil.extractRole(authHeader) : null;
+        String cleanEmail = userEmail.trim().toLowerCase();
+        return "ROLE_ADMIN".equalsIgnoreCase(role) ||
+               "saikumarnexus46@gmail.com".equalsIgnoreCase(cleanEmail) ||
+               "saikumar13637@gmail.com".equalsIgnoreCase(cleanEmail);
+    }
+
     private Flux<String> executeAutonomousChatLoop(String prompt, String activeConvId, String traceId,
                                                    AIProvider provider, ModelRouter.RouteDecision route,
                                                    String customApiKey, String userEmail, String ragContext) {
@@ -409,6 +432,20 @@ public class AIOrchestrator {
 
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
+        // Check if prompt is an Image/Video Media Generation Intent
+        if (isMediaGenerationIntent(prompt) && !isAdminUser(userEmail, authHeader)) {
+            String restrictedMsg = "🔒 **Permission Restricted**: Image and Video generation features on NEXUS AI (saikumar-nexus.com) are restricted exclusively to Admin users. Please contact the administrator (saikumarnexus46@gmail.com) for media generation access.";
+            conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, restrictedMsg, "nexus", "security-shield", 0, 0, 0L);
+            return AiResponse.builder()
+                    .conversationId(activeConvId)
+                    .traceId(traceId)
+                    .content(restrictedMsg)
+                    .provider("nexus")
+                    .model("security-shield")
+                    .latencyMs(System.currentTimeMillis() - start)
+                    .build();
+        }
+
         String ragContext = gatherAndLearnContext(prompt, activeConvId);
 
         ModelRouter.RouteDecision route = modelRouter.route(prompt, providerName, modelName, customApiKey);
@@ -487,6 +524,13 @@ public class AIOrchestrator {
                 String alertMsg = "⚠️ NEXUS AI Provider Alert: Configured AI provider [" + provider.getProviderName() + "] is currently unavailable or unconfigured on the server. Please add GROQ_API_KEY or GEMINI_API_KEY in Render Environment Variables or enter a custom key in Settings.";
                 conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, alertMsg, provider.getProviderName(), route.getTargetModel(), 0, 0, 0L);
                 return Flux.just(alertMsg);
+            }
+
+            // Check if prompt is an Image/Video Media Generation Intent
+            if (isMediaGenerationIntent(prompt) && !isAdminUser(userEmail, authHeader)) {
+                String restrictedMsg = "🔒 **Permission Restricted**: Image and Video generation features on NEXUS AI (saikumar-nexus.com) are restricted exclusively to Admin users. Please contact the administrator (saikumarnexus46@gmail.com) for media generation access.";
+                conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, restrictedMsg, "nexus", "security-shield", 0, 0, 0L);
+                return Flux.just(restrictedMsg);
             }
 
             // Check Auth Status
