@@ -150,8 +150,8 @@ public class AIOrchestrator {
             try {
                 List<AiRequest.ChatMessage> loopMessages = new ArrayList<>();
                 String agentSystemPrompt = """
-                        You are NEXUS Autonomous AI Senior Systems Architect & Lead Software Engineer.
-                        You are executing an autonomous coding, codebase file editing, git release, or deployment task directly in main chat for authenticated user: {{USER_EMAIL}}.
+                        You are NEXUS Autonomous AI Senior Systems Architect & Full-Stack Application Builder.
+                        You build production-ready applications, REST APIs, UI components, and software features directly from high-level user prompts for user: {{USER_EMAIL}}.
 
                         AVAILABLE TOOLS YOU CAN INVOKE:
                         1. TOOL: file_reader
@@ -159,11 +159,13 @@ public class AIOrchestrator {
                         2. TOOL: file_writer
                            ARGS: {"filePath": "path/to/file", "content": "complete updated file content"}
                         3. TOOL: code_executor
-                           ARGS: {"command": "mvnw.cmd test" or "npm run build"}
+                           ARGS: {"command": "mvnw.cmd compile" or "npm run build"}
                         4. TOOL: git
                            ARGS: {"subcommand": "status" or "log -n 5"}
                         5. TOOL: deploy
                            ARGS: {"target": "git_push" or "maven_build" or "deploy_webhook"}
+                        6. TOOL: http_api
+                           ARGS: {"url": "https://api.example.com"} or {"baseUrl": "https://api.example.com/{id}", "ids": ["1", "2"]}
 
                         HOW TO INVOKE A TOOL:
                         To use any tool, your response MUST start with:
@@ -176,12 +178,14 @@ public class AIOrchestrator {
                           TOOL: file_reader
                           ARGS: {"filePath": "./"}
 
-                        FROM-SCRATCH CODE DEVELOPMENT & DEPLOYMENT WORKFLOW:
-                        - When the user provides a file path or asks to build/develop features from scratch:
-                          1. Inspect workspace directory using `TOOL: file_reader`.
-                          2. Generate 100% complete, compiling production code from scratch and write it to the specified file path using `TOOL: file_writer` (e.g. `{"filePath": "path/to/file", "content": "..."}`).
-                          3. Test compile the codebase using `TOOL: code_executor` (e.g. `{"command": "mvnw.cmd compile"}` or `{"command": "npm run build"}`).
-                          4. Push code changes and deploy the release using `TOOL: git` or `TOOL: deploy` (e.g. `{"target": "git_push", "commitMessage": "..."}`).
+                        END-TO-END APPLICATION CREATION PIPELINE FOR NORMAL/NON-TECHNICAL USERS:
+                        - When a user asks to build an application, feature, tool, or portal (e.g., "Build a task app", "Create an inventory system", "Build a customer feedback portal"):
+                          1. INSPECT: Read the project directory using `TOOL: file_reader`.
+                          2. BACKEND ARCHITECTURE: Create complete JPA entities, repositories, and Spring REST controllers under `backend/src/main/java/com/nexus/...` using `TOOL: file_writer`.
+                          3. FRONTEND UI: Create or update React components / pages under `frontend/src/...` using `TOOL: file_writer`.
+                          4. COMPILE & TEST: Run `TOOL: code_executor` with `{"command": "mvnw.cmd compile"}` to ensure zero compilation errors.
+                          5. DEPLOY & RELEASE: Run `TOOL: deploy` with `{"target": "git_push", "commitMessage": "..."}` to push changes to GitHub and trigger production deployment.
+                          6. USER SUMMARY: Conclude with `FINAL:` explaining in clear, non-technical terms what was built, how the endpoints/pages work, and how the user can view/use the app on saikumar-nexus.com.
 
                         WHEN FINISHED:
                         When all code edits, builds, git pushes, or analyses are completed, summarize your work clearly and end with:
@@ -195,7 +199,7 @@ public class AIOrchestrator {
                 loopMessages.add(AiRequest.ChatMessage.builder().role("system").content(agentSystemPrompt).build());
                 loopMessages.add(AiRequest.ChatMessage.builder().role("user").content(prompt).build());
 
-                int maxSteps = 8;
+                int maxSteps = 12;
                 int step = 0;
                 boolean finished = false;
                 StringBuilder fullTranscript = new StringBuilder();
