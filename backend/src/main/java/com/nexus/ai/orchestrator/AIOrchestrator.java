@@ -361,11 +361,12 @@ public class AIOrchestrator {
     public AiResponse processChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt, String customApiKey, String authHeader) {
         long start = System.currentTimeMillis();
         String traceId = traceService.createTraceId();
-        String userId = "default-user";
+        String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
+        String userId = userEmail != null ? userEmail : "default-user";
 
         quotaService.checkAndEnforceQuota(userId);
 
-        Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt);
+        Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt, userEmail);
         String activeConvId = conversation.getId();
 
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
@@ -430,11 +431,12 @@ public class AIOrchestrator {
     public Flux<String> processStreamingChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt, String customApiKey, String authHeader) {
         try {
             String traceId = traceService.createTraceId();
-            String userId = "default-user";
+            String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
+            String userId = userEmail != null ? userEmail : "default-user";
 
             quotaService.checkAndEnforceQuota(userId);
 
-            Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt);
+            Conversation conversation = conversationService.getOrCreateConversation(conversationId, prompt, userEmail);
             String activeConvId = conversation.getId();
 
             conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
@@ -450,7 +452,6 @@ public class AIOrchestrator {
             }
 
             // Check Auth Status
-            String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
             boolean isAuthenticated = userEmail != null && !userEmail.trim().isEmpty();
 
             // Check if prompt is a Coding / File Editing / Git / Deployment Intent

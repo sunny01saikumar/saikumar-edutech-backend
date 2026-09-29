@@ -19,10 +19,12 @@ public class ChatController {
 
     private final AIOrchestrator aiOrchestrator;
     private final ConversationService conversationService;
+    private final com.nexus.ai.security.JwtUtil jwtUtil;
 
-    public ChatController(AIOrchestrator aiOrchestrator, ConversationService conversationService) {
+    public ChatController(AIOrchestrator aiOrchestrator, ConversationService conversationService, com.nexus.ai.security.JwtUtil jwtUtil) {
         this.aiOrchestrator = aiOrchestrator;
         this.conversationService = conversationService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/chat")
@@ -80,18 +82,26 @@ public class ChatController {
     }
 
     @GetMapping("/conversations")
-    public List<Conversation> getConversations() {
-        return conversationService.getAllConversations();
+    public List<Conversation> getConversations(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
+        return conversationService.getConversationsForUser(userEmail);
     }
 
     @GetMapping("/conversations/{id}/messages")
-    public List<Message> getMessages(@PathVariable String id) {
-        return conversationService.getMessagesForConversation(id);
+    public List<Message> getMessages(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id) {
+        String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
+        return conversationService.getMessagesForConversation(id, userEmail);
     }
 
     @DeleteMapping("/conversations/{id}")
-    public Map<String, String> deleteConversation(@PathVariable String id) {
-        conversationService.deleteConversation(id);
+    public Map<String, String> deleteConversation(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable String id) {
+        String userEmail = jwtUtil != null ? jwtUtil.extractEmail(authHeader) : null;
+        conversationService.deleteConversation(id, userEmail);
         return Map.of("status", "deleted", "id", id);
     }
 }

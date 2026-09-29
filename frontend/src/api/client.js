@@ -5,19 +5,19 @@ export async function fetchProviders() {
 }
 
 export async function fetchConversations() {
-  const res = await fetch('/api/ai/conversations');
+  const res = await fetch('/api/ai/conversations', { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch conversations');
   return res.json();
 }
 
 export async function fetchMessages(conversationId) {
-  const res = await fetch(`/api/ai/conversations/${conversationId}/messages`);
+  const res = await fetch(`/api/ai/conversations/${conversationId}/messages`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch messages');
   return res.json();
 }
 
 export async function deleteConversation(conversationId) {
-  const res = await fetch(`/api/ai/conversations/${conversationId}`, { method: 'DELETE' });
+  const res = await fetch(`/api/ai/conversations/${conversationId}`, { method: 'DELETE', headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to delete conversation');
   return res.json();
 }

@@ -24,21 +24,33 @@ public class ConversationService {
 
     @Transactional
     public Conversation getOrCreateConversation(String conversationId, String firstUserMessage) {
-        if (conversationId != null && !conversationId.trim().isEmpty()) {
-            String cleanId = conversationId.trim();
-            return conversationRepository.findById(cleanId)
-                    .orElseGet(() -> createNewConversation(cleanId, firstUserMessage));
-        }
-        return createNewConversation(null, firstUserMessage);
+        return getOrCreateConversation(conversationId, firstUserMessage, null);
     }
 
-    private Conversation createNewConversation(String customId, String titlePrompt) {
+    @Transactional
+    public Conversation getOrCreateConversation(String conversationId, String firstUserMessage, String userEmail) {
+        if (conversationId != null && !conversationId.trim().isEmpty()) {
+            String cleanId = conversationId.trim();
+            Conversation conv = conversationRepository.findById(cleanId)
+                    .orElseGet(() -> createNewConversation(cleanId, firstUserMessage, userEmail));
+
+            if (conv.getUserEmail() == null && userEmail != null && !userEmail.trim().isEmpty()) {
+                conv.setUserEmail(userEmail.trim());
+                conv = conversationRepository.save(conv);
+            }
+            return conv;
+        }
+        return createNewConversation(null, firstUserMessage, userEmail);
+    }
+
+    private Conversation createNewConversation(String customId, String titlePrompt, String userEmail) {
         String title = (titlePrompt != null && !titlePrompt.trim().isEmpty())
                 ? (titlePrompt.length() > 30 ? titlePrompt.substring(0, 30) + "..." : titlePrompt)
                 : "New Chat";
         Conversation conv = Conversation.builder()
                 .id(customId != null && !customId.trim().isEmpty() ? customId.trim() : null)
                 .title(title)
+                .userEmail(userEmail != null && !userEmail.trim().isEmpty() ? userEmail.trim() : null)
                 .build();
         return conversationRepository.save(conv);
     }
@@ -47,8 +59,28 @@ public class ConversationService {
         return conversationRepository.findAllByOrderByUpdatedAtDesc();
     }
 
+    public List<Conversation> getConversationsForUser(String userEmail) {
+        if (userEmail != null && !userEmail.trim().isEmpty()) {
+            return conversationRepository.findByUserEmailOrderByUpdatedAtDesc(userEmail.trim());
+        }
+        return conversationRepository.findByUserEmailIsNullOrderByUpdatedAtDesc();
+    }
+
     public List<Message> getMessagesForConversation(String conversationId) {
-        return messageRepository.findByConversationIdOrderByTimestampAsc(conversationId);
+        return getMessagesForConversation(conversationId, null);
+    }
+
+    public List<Message> getMessagesForConversation(String conversationId, String userEmail) {
+        if (conversationId == null || conversationId.trim().isEmpty()) return List.of();
+        String cleanId = conversationId.trim();
+
+        if (userEmail != null && !userEmail.trim().isEmpty()) {
+            Conversation conv = conversationRepository.findById(cleanId).orElse(null);
+            if (conv != null && conv.getUserEmail() != null && !conv.getUserEmail().equalsIgnoreCase(userEmail.trim())) {
+                return List.of();
+            }
+        }
+        return messageRepository.findByConversationIdOrderByTimestampAsc(cleanId);
     }
 
     @Transactional
@@ -78,7 +110,22 @@ public class ConversationService {
 
     @Transactional
     public void deleteConversation(String id) {
-        messageRepository.deleteByConversationId(id);
-        conversationRepository.deleteById(id);
+        deleteConversation(id, null);
+    }
+
+    @Transactional
+    public void deleteConversation(String id, String userEmail) {
+        if (id == null || id.trim().isEmpty()) return;
+        String cleanId = id.trim();
+        Conversation conv = conversationRepository.findById(cleanId).orElse(null);
+        if (conv != null) {
+            if (conv.getUserEmail() != null && userEmail != null && !userEmail.trim().isEmpty()) {
+                if (!conv.getUserEmail().equalsIgnoreCase(userEmail.trim())) {
+                    return; // Unauthorized to delete another user's conversation
+                }
+            }
+            messageRepository.deleteByConversationId(cleanId);
+            conversationRepository.deleteById(cleanId);
+        }
     }
 }

@@ -25,6 +25,9 @@ public class Conversation {
 
     private String preferredModel;
 
+    @Column(name = "user_email")
+    private String userEmail;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
