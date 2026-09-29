@@ -216,16 +216,31 @@ public class AIOrchestrator {
                         fullTranscript.append(toolOutput);
 
                         loopMessages.add(AiRequest.ChatMessage.builder().role("assistant").content(content).build());
-                        loopMessages.add(AiRequest.ChatMessage.builder().role("user").content("Tool output:\n" + toolOutput).build());
+                        loopMessages.add(AiRequest.ChatMessage.builder().role("user").content("Tool output:\n" + toolOutput + "\nNow proceed with the next tool step or output FINAL: <summary>").build());
                     } else if (content.contains("FINAL:")) {
                         String finalSummary = content.substring(content.indexOf("FINAL:") + 6).trim();
                         emitter.next(finalSummary);
                         fullTranscript.append(finalSummary);
                         finished = true;
                     } else {
-                        emitter.next(content);
-                        fullTranscript.append(content);
-                        finished = true;
+                        // Model generated reasoning prose without TOOL: or FINAL:
+                        if (step < 3) {
+                            String toolHeader = "\n\n🛠️ **[NEXUS CODING AGENT - STEP " + step + "]**: Executing `file_reader`...\n";
+                            emitter.next(toolHeader);
+                            fullTranscript.append(toolHeader);
+
+                            ToolCall toolCall = toolRegistry.executeTool("file_reader", Map.of("filePath", "./"));
+                            String toolOutput = "```\n" + (toolCall != null ? toolCall.getResult() : "Directory inspected") + "\n```\n\n";
+                            emitter.next(toolOutput);
+                            fullTranscript.append(toolOutput);
+
+                            loopMessages.add(AiRequest.ChatMessage.builder().role("assistant").content(content).build());
+                            loopMessages.add(AiRequest.ChatMessage.builder().role("user").content("Workspace directory inspection result:\n" + toolOutput + "\nNow perform necessary code file edits using TOOL: file_writer or build commands using TOOL: code_executor.").build());
+                        } else {
+                            emitter.next(content);
+                            fullTranscript.append(content);
+                            finished = true;
+                        }
                     }
                 }
 
