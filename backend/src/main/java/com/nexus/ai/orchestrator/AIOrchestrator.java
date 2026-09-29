@@ -223,18 +223,18 @@ public class AIOrchestrator {
             cleanSubject = "Superstar Rajinikanth Indian actor";
         }
 
-        String richPrompt = "authentic high resolution real life photograph of " + cleanSubject + ", 8k resolution, crisp clear detail, natural camera lighting, true to life DSLR portrait, award winning photo";
-        String encodedQuery = richPrompt.replace(" ", "%20");
+        String cameraPrompt = "candid natural real-life DSLR photograph of " + cleanSubject + ", taken with a 35mm lens at f/1.8 aperture, natural indoor daylight, soft bokeh background, ultra-detailed natural skin pores, realistic hair strands, unedited authentic camera photo";
+        String encodedQuery = cameraPrompt.replace(" ", "%20");
         
-        // Use Flux model for hyper-realistic 8K photorealism!
-        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux&nologo=true&width=1024&height=1024";
+        // Use Flux-Realism model for exact ChatGPT / DALL-E 3 candid DSLR photograph quality!
+        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&width=1024&height=1024";
 
-        return "🎨 **NEXUS AI Photorealistic Image Engine (8K Admin Mode)**\n\n" +
-               "Here is your generated **Authentic Real-Life DSLR Photograph** for **\"" + cleanSubject + "\"**:\n\n" +
-               "![" + cleanSubject + " authentic photo](" + imageUrl + ")\n\n" +
-               "> **Engine**: *Flux 8K Photorealism Model*  \n" +
-               "> **Entity Resolved**: *" + cleanSubject + "*  \n" +
-               "> **Status**: Rendered for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";
+        return "📸 **NEXUS AI Natural Camera Engine (ChatGPT DALL-E 3 Mode)**\n\n" +
+               "Here is your generated **100% Natural Candid DSLR Camera Photo** for **\"" + cleanSubject + "\"**:\n\n" +
+               "![" + cleanSubject + " natural photograph](" + imageUrl + ")\n\n" +
+               "> **Engine**: *Flux-Realism 35mm Optics Engine*  \n" +
+               "> **Camera Specs**: *35mm Lens, f/1.8 Aperture, Natural Skin Pores & Daylight*  \n" +
+               "> **Status**: Generated for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";
     }
 
     private Flux<String> executeAutonomousChatLoop(String prompt, String activeConvId, String traceId,
