@@ -169,6 +169,42 @@ public class AIOrchestrator {
         return false;
     }
 
+    private String fetchWikipediaRealPhoto(String searchSubject) {
+        try {
+            String cleanTitle = searchSubject.replaceAll("(?i)\\b(Indian|actor|actress|Prime|Minister|Cricket|Captain|Legend|politician|Superstar|South|Baahubali|Pushpa|RRR)\\b", "").trim();
+            cleanTitle = cleanTitle.replaceAll("\\s+", " ").trim().replace(" ", "_");
+            if (cleanTitle.isEmpty()) return null;
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+                    .connectTimeout(java.time.Duration.ofSeconds(2))
+                    .build();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create("https://en.wikipedia.org/api/rest_v1/page/summary/" + java.net.URLEncoder.encode(cleanTitle, java.nio.charset.StandardCharsets.UTF_8)))
+                    .header("User-Agent", "NexusAI/1.0 (https://saikumar-nexus.com; admin@saikumar-nexus.com)")
+                    .timeout(java.time.Duration.ofSeconds(3))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                String json = response.body();
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
+                if (root.has("originalimage") && root.get("originalimage").has("source")) {
+                    String img = root.get("originalimage").get("source").asText();
+                    if (img != null && img.startsWith("http")) return img;
+                }
+                if (root.has("thumbnail") && root.get("thumbnail").has("source")) {
+                    String img = root.get("thumbnail").get("source").asText();
+                    if (img != null && img.startsWith("http")) return img;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Wikipedia real photo lookup skipped for [{}]: {}", searchSubject, e.getMessage());
+        }
+        return null;
+    }
+
     private String generateAdminMediaResponse(String prompt, String userEmail) {
         String cleanSubject = prompt;
         cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|of|with|hd|portrait|realistic|real|photorealistic|in|mode)\\b", "").trim();
@@ -179,60 +215,95 @@ public class AIOrchestrator {
 
         // Standardize famous figures & celebrity entity names for 100% accurate identification
         String lowerSubject = cleanSubject.toLowerCase();
+        String wikiLookupQuery = null;
+
         if (lowerSubject.contains("kajal") || lowerSubject.contains("kjal")) {
             cleanSubject = "Kajal Aggarwal Indian actress";
+            wikiLookupQuery = "Kajal_Aggarwal";
         } else if (lowerSubject.contains("kajol")) {
             cleanSubject = "Kajol Devgan Indian actress";
+            wikiLookupQuery = "Kajol";
         } else if (lowerSubject.contains("samantha")) {
             cleanSubject = "Samantha Ruth Prabhu Indian actress";
+            wikiLookupQuery = "Samantha_Ruth_Prabhu";
         } else if (lowerSubject.contains("rashmika")) {
             cleanSubject = "Rashmika Mandanna Indian actress";
+            wikiLookupQuery = "Rashmika_Mandanna";
         } else if (lowerSubject.contains("deepika")) {
             cleanSubject = "Deepika Padukone Indian actress";
+            wikiLookupQuery = "Deepika_Padukone";
         } else if (lowerSubject.contains("alia")) {
             cleanSubject = "Alia Bhatt Indian actress";
+            wikiLookupQuery = "Alia_Bhatt";
         } else if (lowerSubject.contains("katrina")) {
             cleanSubject = "Katrina Kaif Indian actress";
+            wikiLookupQuery = "Katrina_Kaif";
         } else if (lowerSubject.contains("nayanthara")) {
             cleanSubject = "Nayanthara South Indian actress";
+            wikiLookupQuery = "Nayanthara";
         } else if (lowerSubject.contains("trisha")) {
             cleanSubject = "Trisha Krishnan South Indian actress";
+            wikiLookupQuery = "Trisha_Krishnan";
         } else if (lowerSubject.contains("anushka")) {
             cleanSubject = "Anushka Shetty Baahubali Indian actress";
+            wikiLookupQuery = "Anushka_Shetty";
         } else if (lowerSubject.contains("modi")) {
             cleanSubject = "Narendra Modi Indian Prime Minister";
+            wikiLookupQuery = "Narendra_Modi";
         } else if (lowerSubject.contains("virat") || lowerSubject.contains("kohli") || lowerSubject.contains("kholi")) {
             cleanSubject = "Virat Kohli Indian Cricket Captain";
+            wikiLookupQuery = "Virat_Kohli";
         } else if (lowerSubject.contains("dhoni")) {
             cleanSubject = "MS Dhoni Indian Cricket Legend";
+            wikiLookupQuery = "MS_Dhoni";
         } else if (lowerSubject.contains("srk") || lowerSubject.contains("shah rukh")) {
             cleanSubject = "Shah Rukh Khan Indian actor";
+            wikiLookupQuery = "Shah_Rukh_Khan";
         } else if (lowerSubject.contains("prabhas")) {
             cleanSubject = "Prabhas Indian actor Baahubali";
+            wikiLookupQuery = "Prabhas";
         } else if (lowerSubject.contains("allu arjun")) {
             cleanSubject = "Allu Arjun Pushpa Indian actor";
+            wikiLookupQuery = "Allu_Arjun";
         } else if (lowerSubject.contains("pawan") || lowerSubject.contains("kalyan")) {
             cleanSubject = "Pawan Kalyan Indian actor politician";
+            wikiLookupQuery = "Pawan_Kalyan";
         } else if (lowerSubject.contains("mahesh") || lowerSubject.contains("babu")) {
             cleanSubject = "Mahesh Babu Indian actor";
+            wikiLookupQuery = "Mahesh_Babu";
         } else if (lowerSubject.contains("ram charan")) {
             cleanSubject = "Ram Charan RRR Indian actor";
+            wikiLookupQuery = "Ram_Charan";
         } else if (lowerSubject.contains("ntr") || lowerSubject.contains("jr ntr")) {
             cleanSubject = "Jr NTR RRR Indian actor";
+            wikiLookupQuery = "N._T._Rama_Rao_Jr.";
         } else if (lowerSubject.contains("rajini") || lowerSubject.contains("rajinikanth")) {
             cleanSubject = "Superstar Rajinikanth Indian actor";
+            wikiLookupQuery = "Rajinikanth";
+        } else if (lowerSubject.contains("elon") || lowerSubject.contains("musk")) {
+            cleanSubject = "Elon Musk";
+            wikiLookupQuery = "Elon_Musk";
         }
 
-        String cameraPrompt = "candid natural real-life DSLR photograph of " + cleanSubject + ", taken with a 35mm lens at f/1.8 aperture, natural indoor daylight, soft bokeh background, ultra-detailed natural skin pores, realistic hair strands, unedited authentic camera photo";
-        String encodedQuery = cameraPrompt.replace(" ", "%20");
-        
-        // Use Flux-Realism model for exact ChatGPT / DALL-E 3 candid DSLR photograph quality!
-        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&width=1024&height=1024";
+        String realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
+        String imageUrl;
+        String engineType;
 
-        return "📸 **NEXUS AI Natural Camera Engine (ChatGPT DALL-E 3 Mode)**\n\n" +
-               "Here is your generated **100% Natural Candid DSLR Camera Photo** for **\"" + cleanSubject + "\"**:\n\n" +
+        if (realWikiPhoto != null) {
+            imageUrl = realWikiPhoto;
+            engineType = "Wikimedia Commons Real Photography Archive (100% Authentic Photo)";
+        } else {
+            long randomSeed = System.currentTimeMillis() % 10000;
+            String rawCameraPrompt = "candid natural unedited photo of " + cleanSubject + ", shot on 35mm lens f/1.8 aperture, natural indoor daylight, soft bokeh, natural skin texture with pores, realistic hair, authentic camera snapshot";
+            String encodedQuery = rawCameraPrompt.replace(" ", "%20");
+            imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=false&seed=" + randomSeed + "&width=1024&height=1024";
+            engineType = "Flux-Realism 35mm Optics RAW Engine (Unedited Natural Camera Optics)";
+        }
+
+        return "📸 **NEXUS AI Photorealistic Camera Engine (ChatGPT DALL-E 3 Realism)**\n\n" +
+               "Here is your **100% Natural Candid DSLR Photograph** for **\"" + cleanSubject + "\"**:\n\n" +
                "![" + cleanSubject + " natural photograph](" + imageUrl + ")\n\n" +
-               "> **Engine**: *Flux-Realism 35mm Optics Engine*  \n" +
+               "> **Engine**: *" + engineType + "*  \n" +
                "> **Camera Specs**: *35mm Lens, f/1.8 Aperture, Natural Skin Pores & Daylight*  \n" +
                "> **Status**: Generated for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";
     }
