@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { User, Cpu, Copy, Check, Clock, Zap } from 'lucide-react';
+import { User, Cpu, Copy, Check, Clock, Zap, FileText } from 'lucide-react';
 
 function preprocessMarkdown(text) {
   if (!text) return '';
@@ -110,6 +110,19 @@ export default function MessageItem({ message, isStreaming }) {
               </div>
             )}
           </div>
+
+          {/* Attached Image or Document Preview */}
+          {message.image && (
+            <div className="my-2 max-w-sm rounded-xl overflow-hidden border border-gray-700/60 shadow-lg">
+              <img src={message.image} alt="Attached Asset" className="max-h-60 w-auto object-cover rounded-xl" />
+            </div>
+          )}
+          {message.attachedDoc && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/50 border border-cyan-500/30 text-xs text-cyan-300 font-mono my-2">
+              <FileText className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Indexed Document: {message.attachedDoc}</span>
+            </div>
+          )}
 
           {/* Markdown Content */}
           <div className="markdown-content">

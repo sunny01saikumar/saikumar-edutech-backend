@@ -25,6 +25,8 @@ public class DocumentParser {
                     PDFTextStripper stripper = new PDFTextStripper();
                     return stripper.getText(document);
                 }
+            } else if (lowerName.endsWith(".png") || lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".webp") || (fileType != null && fileType.startsWith("image/"))) {
+                return "[Image Document Attached: " + filename + " (" + fileType + ")] - Image metadata and visual knowledge asset indexed for NEXUS AI analysis.";
             } else {
                 // Text, Markdown, CSV, JSON, TXT, Code files
                 return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);

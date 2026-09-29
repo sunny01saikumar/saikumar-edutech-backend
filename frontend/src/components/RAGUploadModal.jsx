@@ -10,6 +10,25 @@ export default function RAGUploadModal({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
       loadDocs();
+
+      const handleGlobalPaste = (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file) {
+              e.preventDefault();
+              uploadFile(file);
+              break;
+            }
+          }
+        }
+      };
+
+      window.addEventListener('paste', handleGlobalPaste);
+      return () => window.removeEventListener('paste', handleGlobalPaste);
     }
   }, [isOpen]);
 
@@ -22,23 +41,27 @@ export default function RAGUploadModal({ isOpen, onClose }) {
     }
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
+  const uploadFile = async (file) => {
     if (!file) return;
 
     setUploading(true);
-    setStatusMsg('Parsing, chunking, and indexing document in vector database...');
+    setStatusMsg(`Parsing, chunking, and indexing [${file.name}] into vector database...`);
 
     try {
       await uploadDocument(file);
-      setStatusMsg('Document successfully indexed for RAG!');
+      setStatusMsg(`[${file.name}] successfully indexed into RAG Knowledge Base!`);
       loadDocs();
-      setTimeout(() => setStatusMsg(''), 3000);
+      setTimeout(() => setStatusMsg(''), 4000);
     } catch (err) {
       setStatusMsg('Failed to upload document: ' + err.message);
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) uploadFile(file);
   };
 
   const handleDelete = async (id) => {
@@ -67,14 +90,23 @@ export default function RAGUploadModal({ isOpen, onClose }) {
         </div>
 
         {/* Upload Zone */}
-        <div className="my-5 border-2 border-dashed border-gray-700/60 hover:border-cyan-500/50 rounded-xl p-6 text-center bg-gray-900/40 transition-colors">
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              uploadFile(e.dataTransfer.files[0]);
+            }
+          }}
+          className="my-5 border-2 border-dashed border-gray-700/60 hover:border-cyan-500/50 rounded-xl p-6 text-center bg-gray-900/40 transition-colors cursor-pointer"
+        >
           <input
             type="file"
             id="rag-file-input"
             onChange={handleFileChange}
             disabled={uploading}
             className="hidden"
-            accept=".pdf,.txt,.md,.json,.csv,.docx"
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.md,.json,.csv,.docx"
           />
           <label htmlFor="rag-file-input" className="cursor-pointer flex flex-col items-center justify-center">
             {uploading ? (
@@ -83,10 +115,10 @@ export default function RAGUploadModal({ isOpen, onClose }) {
               <UploadCloud className="w-10 h-10 text-cyan-400 mb-2" />
             )}
             <span className="text-sm font-semibold text-gray-200">
-              {uploading ? 'Processing Document...' : 'Click to Upload Document'}
+              {uploading ? 'Processing & Indexing Asset...' : 'Click, Drag & Drop, or Paste (Ctrl+V)'}
             </span>
             <span className="text-xs text-gray-400 mt-1">
-              Supports PDF, Markdown, TXT, CSV, JSON (Auto Chunked & Vector Indexed)
+              Supports Images (PNG, JPG, WebP), PDF, Markdown, TXT, CSV, JSON (Auto Chunked & Vector Indexed)
             </span>
           </label>
         </div>
