@@ -129,11 +129,13 @@ public class AIOrchestrator {
 
     private boolean isCodingOrDeployIntent(String prompt) {
         if (prompt == null) return false;
+        if (isMediaGenerationIntent(prompt)) return false;
         String lower = prompt.toLowerCase();
         return lower.contains("code") || lower.contains("fix") || lower.contains("deploy") ||
                lower.contains("push") || lower.contains("git") || lower.contains("build") ||
                lower.contains("refactor") || lower.contains("analysis") || lower.contains("file") ||
-               lower.contains("create") || lower.contains("java") || lower.contains("spring") ||
+               lower.contains("create app") || lower.contains("create file") || lower.contains("create endpoint") ||
+               lower.contains("create class") || lower.contains("java") || lower.contains("spring") ||
                lower.contains("endpoint") || lower.contains("c:\\") || lower.contains("github") ||
                lower.contains("disappearing") || lower.contains("repository") || lower.contains("nexus") ||
                lower.contains("directory") || lower.contains("update") || lower.contains("modify") ||
@@ -144,15 +146,10 @@ public class AIOrchestrator {
     private boolean isMediaGenerationIntent(String prompt) {
         if (prompt == null) return false;
         String lower = prompt.toLowerCase();
-        return lower.contains("generate image") || lower.contains("create image") ||
-               lower.contains("draw image") || lower.contains("make image") ||
-               lower.contains("generate video") || lower.contains("create video") ||
-               lower.contains("make video") || lower.contains("render image") ||
-               lower.contains("generate picture") || lower.contains("create picture") ||
-               lower.contains("generate photo") || lower.contains("create photo") ||
-               lower.contains("imagen") || lower.contains("dall-e") ||
-               lower.contains("sora") || lower.contains("runway") ||
-               lower.contains("image generator") || lower.contains("video generator");
+        return lower.contains("image") || lower.contains("picture") || lower.contains("photo") ||
+               lower.contains("video") || lower.contains("draw") || lower.contains("portrait") ||
+               lower.contains("painting") || lower.contains("imagen") || lower.contains("dall-e") ||
+               lower.contains("sora") || lower.contains("runway") || lower.contains("illustration");
     }
 
     private boolean isAdminUser(String userEmail, String authHeader) {
