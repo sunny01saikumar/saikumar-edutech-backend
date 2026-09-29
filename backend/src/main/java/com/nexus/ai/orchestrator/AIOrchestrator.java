@@ -152,7 +152,7 @@ public class AIOrchestrator {
 
                         AVAILABLE TOOLS YOU CAN INVOKE:
                         1. TOOL: file_reader
-                           ARGS: {"filePath": "./"} or {"filePath": "backend/src/main/resources/application.yml"}
+                           ARGS: {"filePath": "./"} or {"filePath": "path/to/file"}
                         2. TOOL: file_writer
                            ARGS: {"filePath": "path/to/file", "content": "complete updated file content"}
                         3. TOOL: code_executor
@@ -163,13 +163,15 @@ public class AIOrchestrator {
                            ARGS: {"target": "git_push" or "maven_build" or "deploy_webhook"}
 
                         HOW TO INVOKE A TOOL:
-                        To use any tool, output EXACTLY:
+                        To use any tool, your response MUST start with:
                         TOOL: <tool_name>
                         ARGS: {"arg1": "val1"}
 
                         CRITICAL ACTION MANDATE:
-                        - DO NOT output conversational questions asking "What feature would you like me to add?".
-                        - EVEN IF THE USER PROMPT IS GENERAL (e.g. "update the code", "code", "analyze codebase"), IMMEDIATELY START BY INVOKING TOOL `file_reader` WITH ARGS `{"filePath": "./"}` TO INSPECT THE PROJECT WORKSPACE AND AUDIT/UPDATE FILES!
+                        - DO NOT output conversational greetings or questions like "What would you like me to do?".
+                        - ON STEP 1, YOUR VERY FIRST OUTPUT MUST BE:
+                          TOOL: file_reader
+                          ARGS: {"filePath": "./"}
 
                         WHEN FINISHED:
                         When all code edits, builds, git pushes, or analyses are completed, summarize your work clearly and end with:
@@ -227,8 +229,8 @@ public class AIOrchestrator {
                         finished = true;
                     } else {
                         // Model generated reasoning prose without TOOL: or FINAL:
-                        if (step < 3) {
-                            String toolHeader = "\n\n🛠️ **[NEXUS CODING AGENT - STEP " + step + "]**: Executing `file_reader`...\n";
+                        if (step == 1) {
+                            String toolHeader = "\n\n🛠️ **[NEXUS CODING AGENT - STEP 1]**: Executing `file_reader`...\n";
                             emitter.next(toolHeader);
                             fullTranscript.append(toolHeader);
 
@@ -237,8 +239,8 @@ public class AIOrchestrator {
                             emitter.next(toolOutput);
                             fullTranscript.append(toolOutput);
 
-                            loopMessages.add(AiRequest.ChatMessage.builder().role("assistant").content(content).build());
-                            loopMessages.add(AiRequest.ChatMessage.builder().role("user").content("Workspace directory inspection result:\n" + toolOutput + "\nNow perform necessary code file edits using TOOL: file_writer or build commands using TOOL: code_executor.").build());
+                            loopMessages.add(AiRequest.ChatMessage.builder().role("assistant").content("TOOL: file_reader\nARGS: {\"filePath\": \"./\"}").build());
+                            loopMessages.add(AiRequest.ChatMessage.builder().role("user").content("Workspace directory inspection result:\n" + toolOutput + "\nNow inspect source files using TOOL: file_reader or write code changes using TOOL: file_writer.").build());
                         } else {
                             emitter.next(content);
                             fullTranscript.append(content);
