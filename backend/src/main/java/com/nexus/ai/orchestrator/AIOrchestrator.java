@@ -174,17 +174,11 @@ public class AIOrchestrator {
             cleanSubject = prompt.trim();
         }
 
-        String encodedPrompt;
-        try {
-            encodedPrompt = java.net.URLEncoder.encode(cleanSubject + " high quality HD portrait", java.nio.charset.StandardCharsets.UTF_8.name());
-        } catch (Exception e) {
-            encodedPrompt = cleanSubject.replace(" ", "%20");
-        }
-
-        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedPrompt + "?width=1024&height=1024&nologo=true&seed=" + (System.currentTimeMillis() % 100000);
+        String queryParam = cleanSubject.replace(" ", "%20");
+        String imageUrl = "https://image.pollinations.ai/prompt/" + queryParam + "%20high%20quality%20portrait?nologo=true&width=1024&height=1024";
 
         return "🎨 **NEXUS AI Image Generator (Admin Mode)**\n\n" +
-               "Here is your generated image for **\"" + cleanSubject + "\"**:\n\n" +
+               "Here is your generated high-resolution image for **\"" + cleanSubject + "\"**:\n\n" +
                "![" + cleanSubject + "](" + imageUrl + ")\n\n" +
                "> **Prompt**: *" + cleanSubject + "*  \n" +
                "> **Status**: Generated successfully for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";

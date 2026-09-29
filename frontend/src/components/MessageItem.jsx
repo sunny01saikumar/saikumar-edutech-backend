@@ -133,6 +133,26 @@ export default function MessageItem({ message, isStreaming }) {
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
+                  img({ node, src, alt, ...props }) {
+                    return (
+                      <div className="my-4 max-w-xl rounded-2xl overflow-hidden border border-cyan-500/30 shadow-2xl bg-gray-900/80 p-1.5 transition-transform hover:scale-[1.01]">
+                        <img
+                          src={src}
+                          alt={alt || "Generated Image"}
+                          className="w-full h-auto max-h-[480px] object-cover rounded-xl shadow-lg border border-gray-800"
+                          loading="lazy"
+                          onError={(e) => {
+                            if (!e.target.dataset.failedOnce) {
+                              e.target.dataset.failedOnce = "true";
+                              const fallbackPrompt = encodeURIComponent(alt || "Cricket Star");
+                              e.target.src = `https://pollinations.ai/p/${fallbackPrompt}?width=1024&height=1024&nologo=true`;
+                            }
+                          }}
+                          {...props}
+                        />
+                      </div>
+                    );
+                  },
                   code({ node, inline, className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || '');
                     const codeString = String(children).replace(/\n$/, '');
