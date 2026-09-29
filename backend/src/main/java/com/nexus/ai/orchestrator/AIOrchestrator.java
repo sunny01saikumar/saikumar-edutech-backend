@@ -164,6 +164,10 @@ public class AIOrchestrator {
                         TOOL: <tool_name>
                         ARGS: {"arg1": "val1"}
 
+                        CRITICAL ACTION MANDATE:
+                        - DO NOT output conversational questions asking "What feature would you like me to add?".
+                        - EVEN IF THE USER PROMPT IS GENERAL (e.g. "update the code", "code", "analyze codebase"), IMMEDIATELY START BY INVOKING TOOL `file_reader` WITH ARGS `{"filePath": "./"}` TO INSPECT THE PROJECT WORKSPACE AND AUDIT/UPDATE FILES!
+
                         WHEN FINISHED:
                         When all code edits, builds, git pushes, or analyses are completed, summarize your work clearly and end with:
                         FINAL: <summary of final result>
