@@ -132,7 +132,10 @@ public class AIOrchestrator {
                lower.contains("refactor") || lower.contains("analysis") || lower.contains("file") ||
                lower.contains("create") || lower.contains("java") || lower.contains("spring") ||
                lower.contains("endpoint") || lower.contains("c:\\") || lower.contains("github") ||
-               lower.contains("disappearing") || lower.contains("repository") || lower.contains("nexus");
+               lower.contains("disappearing") || lower.contains("repository") || lower.contains("nexus") ||
+               lower.contains("directory") || lower.contains("update") || lower.contains("modify") ||
+               lower.contains("write") || lower.contains("script") || lower.contains("bug") ||
+               lower.contains("error") || lower.contains("patch");
     }
 
     private Flux<String> executeAutonomousChatLoop(String prompt, String activeConvId, String traceId,
@@ -180,7 +183,7 @@ public class AIOrchestrator {
                 loopMessages.add(AiRequest.ChatMessage.builder().role("system").content(agentSystemPrompt).build());
                 loopMessages.add(AiRequest.ChatMessage.builder().role("user").content(prompt).build());
 
-                int maxSteps = 6;
+                int maxSteps = 8;
                 int step = 0;
                 boolean finished = false;
                 StringBuilder fullTranscript = new StringBuilder();
@@ -201,8 +204,8 @@ public class AIOrchestrator {
                     String content = response.getContent() != null ? response.getContent().trim() : "";
 
                     if (content.contains("TOOL:")) {
-                        String toolName = extractField(content, "TOOL:");
-                        String argsJson = extractField(content, "ARGS:");
+                        String toolName = extractToolName(content);
+                        String argsJson = extractArgsJson(content);
 
                         String toolHeader = "\n\n🛠️ **[NEXUS CODING AGENT - STEP " + step + "]**: Executing `" + toolName + "`...\n";
                         emitter.next(toolHeader);
@@ -255,28 +258,94 @@ public class AIOrchestrator {
         });
     }
 
-    private String extractField(String text, String prefix) {
-        int start = text.indexOf(prefix);
+    private String extractToolName(String text) {
+        int start = text.indexOf("TOOL:");
         if (start == -1) return "";
-        int end = text.indexOf("\n", start);
-        if (end == -1) end = text.length();
-        return text.substring(start + prefix.length(), end).trim();
+        int lineEnd = text.indexOf("\n", start);
+        if (lineEnd == -1) lineEnd = text.length();
+        String raw = text.substring(start + 5, lineEnd).trim();
+        return raw.replaceAll("`", "").replaceAll("\"", "").trim();
     }
 
-    private Map<String, Object> parseArgs(String json) {
-        Map<String, Object> map = new HashMap<>();
-        if (json == null || json.isEmpty()) return map;
-        try {
-            String clean = json.replaceAll("[\\{\\}\"]", "");
-            String[] parts = clean.split(",");
-            for (String part : parts) {
-                String[] kv = part.split(":");
-                if (kv.length == 2) {
-                    map.put(kv[0].trim(), kv[1].trim());
+    private String extractArgsJson(String text) {
+        int start = text.indexOf("ARGS:");
+        if (start == -1) return "";
+        String substring = text.substring(start + 5).trim();
+        int braceStart = substring.indexOf("{");
+        if (braceStart == -1) return substring;
+
+        int braceCount = 0;
+        int braceEnd = -1;
+        boolean inQuotes = false;
+        boolean escaped = false;
+
+        for (int i = braceStart; i < substring.length(); i++) {
+            char c = substring.charAt(i);
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (c == '\\') {
+                escaped = true;
+                continue;
+            }
+            if (c == '"') {
+                inQuotes = !inQuotes;
+                continue;
+            }
+            if (!inQuotes) {
+                if (c == '{') {
+                    braceCount++;
+                } else if (c == '}') {
+                    braceCount--;
+                    if (braceCount == 0) {
+                        braceEnd = i;
+                        break;
+                    }
                 }
             }
-        } catch (Exception ignored) {}
+        }
+
+        if (braceEnd != -1) {
+            return substring.substring(braceStart, braceEnd + 1);
+        }
+        return substring;
+    }
+
+    private Map<String, Object> parseArgs(String jsonStr) {
+        Map<String, Object> map = new HashMap<>();
+        if (jsonStr == null || jsonStr.trim().isEmpty()) return map;
+
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return mapper.readValue(jsonStr, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>(){});
+        } catch (Exception e) {
+            log.warn("Jackson JSON parse warning for tool args, executing regex extraction fallback: {}", e.getMessage());
+        }
+
+        extractJsonField(jsonStr, "filePath", map);
+        extractJsonField(jsonStr, "path", map);
+        extractJsonField(jsonStr, "targetFile", map);
+        extractJsonField(jsonStr, "file", map);
+        extractJsonField(jsonStr, "content", map);
+        extractJsonField(jsonStr, "code", map);
+        extractJsonField(jsonStr, "command", map);
+        extractJsonField(jsonStr, "subcommand", map);
+        extractJsonField(jsonStr, "target", map);
+        extractJsonField(jsonStr, "commitMessage", map);
+
         return map;
+    }
+
+    private void extractJsonField(String json, String fieldName, Map<String, Object> targetMap) {
+        if (targetMap.containsKey(fieldName)) return;
+        String patternStr = "\"" + fieldName + "\"\\s*:\\s*\"([^\"]*)\"";
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(patternStr, java.util.regex.Pattern.DOTALL);
+        java.util.regex.Matcher matcher = pattern.matcher(json);
+        if (matcher.find()) {
+            targetMap.put(fieldName, matcher.group(1));
+        }
     }
 
     public AiResponse processChat(String prompt, String conversationId, String providerName, String modelName, String systemPrompt) {
