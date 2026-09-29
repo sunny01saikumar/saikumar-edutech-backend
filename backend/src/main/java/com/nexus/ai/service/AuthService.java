@@ -22,11 +22,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final QuotaService quotaService;
+    private final EmailService emailService;
 
-    public AuthService(UserRepository userRepository, JwtUtil jwtUtil, QuotaService quotaService) {
+    public AuthService(UserRepository userRepository, JwtUtil jwtUtil, QuotaService quotaService, EmailService emailService) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.quotaService = quotaService;
+        this.emailService = emailService;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -82,6 +84,9 @@ public class AuthService {
         // Initialize default free subscription and quota
         quotaService.getUsageStats(user.getId());
 
+        // Dispatch welcome email asynchronously
+        emailService.sendRegistrationNotificationEmail(user.getEmail(), user.getName());
+
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
 
         return Map.of(
@@ -107,6 +112,9 @@ public class AuthService {
         if (!user.getPasswordHash().equals(hashPassword(password))) {
             throw new IllegalArgumentException("Invalid email or password.");
         }
+
+        // Dispatch sign-in security alert email asynchronously
+        emailService.sendLoginNotificationEmail(user.getEmail(), user.getName(), user.getRole());
 
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
 
