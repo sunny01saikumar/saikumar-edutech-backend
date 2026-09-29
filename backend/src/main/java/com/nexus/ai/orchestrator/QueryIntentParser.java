@@ -141,12 +141,23 @@ public class QueryIntentParser {
 
     private String extractCleanKeywords(String raw) {
         if (raw == null) return "";
+        String lowerRaw = raw.toLowerCase();
+
+        // Safeguard: If query relates to technical/code/deployment/git, return raw prompt as clean keywords
+        if (lowerRaw.contains("code") || lowerRaw.contains("github") || lowerRaw.contains("git") ||
+            lowerRaw.contains("deploy") || lowerRaw.contains("chat") || lowerRaw.contains("nexus") ||
+            lowerRaw.contains("antigravity") || lowerRaw.contains("quick-hawking") || lowerRaw.contains("fix") ||
+            lowerRaw.contains("java") || lowerRaw.contains("spring") || lowerRaw.contains("analysis") ||
+            lowerRaw.contains("disappearing") || lowerRaw.contains("path") || lowerRaw.contains("c:\\")) {
+            return raw.trim();
+        }
+
         String cleaned = raw.trim()
                 .replaceAll("(?i)^(what is|what are|where is|where are|who is|who are|when is|when did|how is|how does|why is|why does|tell me about|explain me about|explain me abot|explain|search web for|search for|information on)\\s+", "")
                 .replaceAll("[?!=.,\"]", "")
                 .trim();
         cleaned = cleaned.replaceAll("(?i)\\bcaption\\b", "captain");
-        String lowerRaw = raw.toLowerCase();
+
         if ((lowerRaw.contains("subas chandra") || lowerRaw.contains("subash chandra") || lowerRaw.contains("subhash chandra")) &&
             (lowerRaw.contains("boss") || lowerRaw.contains("bose") || lowerRaw.contains("netaji"))) {
             return "Subhas Chandra Bose freedom fighter Netaji";

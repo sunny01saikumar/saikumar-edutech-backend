@@ -139,7 +139,9 @@ public class ContextWindowBuilder {
             sb.append("\n\n--- RETRIEVED KNOWLEDGE ---\n");
             sb.append(ragContext);
             sb.append("\n---------------------------\n");
-            sb.append("CRITICAL: NEVER begin answers with 'Based on the retrieved information' or 'Considering the documents retrieved'. Answer directly as NEXUS AI using accurate real-world facts.");
+            sb.append("CRITICAL DIRECTIVE FOR RETRIEVED KNOWLEDGE:\n");
+            sb.append("1. If the RETRIEVED KNOWLEDGE is unrelated to the user's prompt (e.g. sports/cricket context vs technical/code context), IGNORE IT COMPLETELY.\n");
+            sb.append("2. NEVER begin answers with 'Based on the retrieved information'. Answer directly, accurately, and authoritatively as NEXUS AI.");
         }
 
         return sb.toString();
