@@ -9,21 +9,35 @@ function GeneratedImageCard({ src, alt }) {
   const [currentSrc, setCurrentSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    setLoaded(false);
-    setHasError(false);
-    setCurrentSrc(src);
-  }, [src]);
-
   const cleanSubject = encodeURIComponent((alt || "image").replace(/[^a-zA-Z0-9 ]/g, "").trim());
 
   const handleError = () => {
-    if (currentSrc.includes("image.pollinations.ai")) {
+    if (currentSrc && currentSrc.includes("wikimedia")) {
+      setCurrentSrc(`https://image.pollinations.ai/prompt/candid%20real-life%20DSLR%20photo%20of%20${cleanSubject}?model=flux-realism&nologo=true&enhance=false&width=1024&height=1024&seed=42`);
+    } else if (currentSrc && currentSrc.includes("image.pollinations.ai")) {
       setCurrentSrc(`https://pollinations.ai/p/${cleanSubject}?width=800&height=800&seed=42&nologo=true`);
     } else if (!hasError) {
       setHasError(true);
     }
   };
+
+  useEffect(() => {
+    setLoaded(false);
+    setHasError(false);
+    const sanitizedSrc = src ? src.replace(/\(/g, '%28').replace(/\)/g, '%29') : src;
+    setCurrentSrc(sanitizedSrc);
+
+    const timer = setTimeout(() => {
+      setLoaded(prev => {
+        if (!prev) {
+          handleError();
+        }
+        return prev;
+      });
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [src]);
 
   return (
     <div className="my-4 max-w-xl rounded-2xl overflow-hidden border border-cyan-500/30 shadow-2xl bg-[#0B0F19] p-2 relative group">
