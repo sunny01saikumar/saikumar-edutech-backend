@@ -144,15 +144,93 @@ public class AIOrchestrator {
     }
 
     private boolean isMediaGenerationIntent(String prompt) {
+        return isMediaGenerationIntent(prompt, null);
+    }
+
+    private boolean isMediaGenerationIntent(String prompt, String activeConvId) {
         if (prompt == null) return false;
-        String lower = prompt.toLowerCase();
-        return lower.contains("image") || lower.contains("picture") || lower.contains("photo") ||
+        String lower = prompt.toLowerCase().trim();
+        boolean hasKeyword = lower.contains("image") || lower.contains("picture") || lower.contains("photo") ||
                lower.contains("phot") || lower.contains("pht") || lower.contains("pic") ||
                lower.contains("pics") || lower.contains("img") || lower.contains("imgs") ||
                lower.contains("foto") || lower.contains("fotos") || lower.contains("generate") ||
                lower.contains("video") || lower.contains("draw") || lower.contains("portrait") ||
                lower.contains("painting") || lower.contains("imagen") || lower.contains("dall-e") ||
-               lower.contains("sora") || lower.contains("runway") || lower.contains("illustration");
+               lower.contains("sora") || lower.contains("runway") || lower.contains("illustration") ||
+               lower.contains("hot") || lower.contains("glamour") || lower.contains("glam") ||
+               lower.contains("saree") || lower.contains("photoshoot") || lower.contains("wallpaper");
+
+        if (hasKeyword) return true;
+
+        if (activeConvId != null && !activeConvId.trim().isEmpty()) {
+            List<Message> history = conversationService.getMessagesForConversation(activeConvId);
+            boolean convHasMedia = history.stream().anyMatch(m -> m.getContent() != null && m.getContent().contains("📸"));
+            if (convHasMedia) {
+                return lower.contains("more") || lower.contains("another") || lower.contains("full") ||
+                       lower.contains("dress") || lower.contains("outfit") || lower.contains("style") ||
+                       lower.contains("look") || lower.contains("pose") || lower.contains("cute") ||
+                       lower.contains("beautiful") || lower.contains("red") || lower.contains("black") ||
+                       lower.contains("white") || lower.contains("next") || lower.contains("change");
+            }
+        }
+        return false;
+    }
+
+    private String resolveWikiQuery(String text) {
+        if (text == null) return null;
+        String lower = text.toLowerCase();
+        if (lower.contains("kajal") || lower.contains("kjal")) return "Kajal_Aggarwal";
+        if (lower.contains("kajol")) return "Kajol";
+        if (lower.contains("samantha")) return "Samantha_Ruth_Prabhu";
+        if (lower.contains("rashmika")) return "Rashmika_Mandanna";
+        if (lower.contains("deepika")) return "Deepika_Padukone";
+        if (lower.contains("alia")) return "Alia_Bhatt";
+        if (lower.contains("katrina")) return "Katrina_Kaif";
+        if (lower.contains("nayanthara")) return "Nayanthara";
+        if (lower.contains("trisha")) return "Trisha_Krishnan";
+        if (lower.contains("anushka")) return "Anushka_Shetty";
+        if (lower.contains("modi")) return "Narendra_Modi";
+        if (lower.contains("virat") || lower.contains("kohli") || lower.contains("kholi")) return "Virat_Kohli";
+        if (lower.contains("dhoni")) return "MS_Dhoni";
+        if (lower.contains("srk") || lower.contains("shah rukh")) return "Shah_Rukh_Khan";
+        if (lower.contains("prabhas")) return "Prabhas";
+        if (lower.contains("allu arjun")) return "Allu_Arjun";
+        if (lower.contains("pawan") || lower.contains("kalyan")) return "Pawan_Kalyan";
+        if (lower.contains("mahesh") || lower.contains("babu")) return "Mahesh_Babu";
+        if (lower.contains("ram charan")) return "Ram_Charan";
+        if (lower.contains("ntr") || lower.contains("jr ntr")) return "N._T._Rama_Rao_Jr.";
+        if (lower.contains("rajini") || lower.contains("rajinikanth")) return "Rajinikanth";
+        if (lower.contains("elon") || lower.contains("musk")) return "Elon_Musk";
+        return null;
+    }
+
+    private String formatCleanSubject(String wikiQuery) {
+        if (wikiQuery == null) return "";
+        switch (wikiQuery) {
+            case "Kajal_Aggarwal": return "Kajal Aggarwal Indian actress";
+            case "Kajol": return "Kajol Devgan Indian actress";
+            case "Samantha_Ruth_Prabhu": return "Samantha Ruth Prabhu Indian actress";
+            case "Rashmika_Mandanna": return "Rashmika Mandanna Indian actress";
+            case "Deepika_Padukone": return "Deepika Padukone Indian actress";
+            case "Alia_Bhatt": return "Alia Bhatt Indian actress";
+            case "Katrina_Kaif": return "Katrina Kaif Indian actress";
+            case "Nayanthara": return "Nayanthara South Indian actress";
+            case "Trisha_Krishnan": return "Trisha Krishnan South Indian actress";
+            case "Anushka_Shetty": return "Anushka Shetty Baahubali Indian actress";
+            case "Narendra_Modi": return "Narendra Modi Indian Prime Minister";
+            case "Virat_Kohli": return "Virat Kohli Indian Cricket Captain";
+            case "MS_Dhoni": return "MS Dhoni Indian Cricket Legend";
+            case "Shah_Rukh_Khan": return "Shah Rukh Khan Indian actor";
+            case "Prabhas": return "Prabhas Indian actor Baahubali";
+            case "Allu_Arjun": return "Allu Arjun Pushpa Indian actor";
+            case "Pawan_Kalyan": return "Pawan Kalyan Indian actor politician";
+            case "Mahesh_Babu": return "Mahesh Babu Indian actor";
+            case "Ram_Charan": return "Ram Charan RRR Indian actor";
+            case "N._T._Rama_Rao_Jr.": return "Jr NTR RRR Indian actor";
+            case "Rajinikanth": return "Superstar Rajinikanth Indian actor";
+            case "Elon_Musk": return "Elon Musk";
+            default: return wikiQuery.replace("_", " ");
+        }
     }
 
     private boolean isAdminUser(String userEmail, String authHeader) {
@@ -205,87 +283,50 @@ public class AIOrchestrator {
         return null;
     }
 
-    private String generateAdminMediaResponse(String prompt, String userEmail) {
+    private String generateAdminMediaResponse(String prompt, String activeConvId, String userEmail) {
         String cleanSubject = prompt;
-        cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|of|with|hd|portrait|realistic|real|photorealistic|in|mode)\\b", "").trim();
+        cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|of|with|hd|portrait|realistic|real|photorealistic|in|mode|i|want|give|get|look|style)\\b", "").trim();
         cleanSubject = cleanSubject.replaceAll("\\s+", " ").trim();
+
+        String lowerPrompt = prompt.toLowerCase();
+        String styleModifier = "";
+        if (lowerPrompt.contains("hot") || lowerPrompt.contains("glamour") || lowerPrompt.contains("glam")) {
+            styleModifier = "stylish glamour photoshoot";
+        } else if (lowerPrompt.contains("saree")) {
+            styleModifier = "traditional saree attire";
+        } else if (lowerPrompt.contains("dress") || lowerPrompt.contains("outfit")) {
+            styleModifier = "modern fashion outfit";
+        } else if (lowerPrompt.contains("full")) {
+            styleModifier = "full length portrait shot";
+        }
+
+        String wikiLookupQuery = resolveWikiQuery(prompt);
+        if (wikiLookupQuery != null) {
+            cleanSubject = formatCleanSubject(wikiLookupQuery);
+        }
+
+        if (wikiLookupQuery == null && activeConvId != null) {
+            List<Message> history = conversationService.getMessagesForConversation(activeConvId);
+            for (int i = history.size() - 1; i >= 0; i--) {
+                Message msg = history.get(i);
+                if (msg.getContent() != null) {
+                    String resolved = resolveWikiQuery(msg.getContent());
+                    if (resolved != null) {
+                        wikiLookupQuery = resolved;
+                        cleanSubject = formatCleanSubject(wikiLookupQuery);
+                        break;
+                    }
+                }
+            }
+        }
+
         if (cleanSubject.isEmpty()) {
             cleanSubject = prompt.trim();
         }
 
-        // Standardize famous figures & celebrity entity names for 100% accurate identification
-        String lowerSubject = cleanSubject.toLowerCase();
-        String wikiLookupQuery = null;
+        String fullSubjectPrompt = cleanSubject + (!styleModifier.isEmpty() ? " in " + styleModifier : "");
 
-        if (lowerSubject.contains("kajal") || lowerSubject.contains("kjal")) {
-            cleanSubject = "Kajal Aggarwal Indian actress";
-            wikiLookupQuery = "Kajal_Aggarwal";
-        } else if (lowerSubject.contains("kajol")) {
-            cleanSubject = "Kajol Devgan Indian actress";
-            wikiLookupQuery = "Kajol";
-        } else if (lowerSubject.contains("samantha")) {
-            cleanSubject = "Samantha Ruth Prabhu Indian actress";
-            wikiLookupQuery = "Samantha_Ruth_Prabhu";
-        } else if (lowerSubject.contains("rashmika")) {
-            cleanSubject = "Rashmika Mandanna Indian actress";
-            wikiLookupQuery = "Rashmika_Mandanna";
-        } else if (lowerSubject.contains("deepika")) {
-            cleanSubject = "Deepika Padukone Indian actress";
-            wikiLookupQuery = "Deepika_Padukone";
-        } else if (lowerSubject.contains("alia")) {
-            cleanSubject = "Alia Bhatt Indian actress";
-            wikiLookupQuery = "Alia_Bhatt";
-        } else if (lowerSubject.contains("katrina")) {
-            cleanSubject = "Katrina Kaif Indian actress";
-            wikiLookupQuery = "Katrina_Kaif";
-        } else if (lowerSubject.contains("nayanthara")) {
-            cleanSubject = "Nayanthara South Indian actress";
-            wikiLookupQuery = "Nayanthara";
-        } else if (lowerSubject.contains("trisha")) {
-            cleanSubject = "Trisha Krishnan South Indian actress";
-            wikiLookupQuery = "Trisha_Krishnan";
-        } else if (lowerSubject.contains("anushka")) {
-            cleanSubject = "Anushka Shetty Baahubali Indian actress";
-            wikiLookupQuery = "Anushka_Shetty";
-        } else if (lowerSubject.contains("modi")) {
-            cleanSubject = "Narendra Modi Indian Prime Minister";
-            wikiLookupQuery = "Narendra_Modi";
-        } else if (lowerSubject.contains("virat") || lowerSubject.contains("kohli") || lowerSubject.contains("kholi")) {
-            cleanSubject = "Virat Kohli Indian Cricket Captain";
-            wikiLookupQuery = "Virat_Kohli";
-        } else if (lowerSubject.contains("dhoni")) {
-            cleanSubject = "MS Dhoni Indian Cricket Legend";
-            wikiLookupQuery = "MS_Dhoni";
-        } else if (lowerSubject.contains("srk") || lowerSubject.contains("shah rukh")) {
-            cleanSubject = "Shah Rukh Khan Indian actor";
-            wikiLookupQuery = "Shah_Rukh_Khan";
-        } else if (lowerSubject.contains("prabhas")) {
-            cleanSubject = "Prabhas Indian actor Baahubali";
-            wikiLookupQuery = "Prabhas";
-        } else if (lowerSubject.contains("allu arjun")) {
-            cleanSubject = "Allu Arjun Pushpa Indian actor";
-            wikiLookupQuery = "Allu_Arjun";
-        } else if (lowerSubject.contains("pawan") || lowerSubject.contains("kalyan")) {
-            cleanSubject = "Pawan Kalyan Indian actor politician";
-            wikiLookupQuery = "Pawan_Kalyan";
-        } else if (lowerSubject.contains("mahesh") || lowerSubject.contains("babu")) {
-            cleanSubject = "Mahesh Babu Indian actor";
-            wikiLookupQuery = "Mahesh_Babu";
-        } else if (lowerSubject.contains("ram charan")) {
-            cleanSubject = "Ram Charan RRR Indian actor";
-            wikiLookupQuery = "Ram_Charan";
-        } else if (lowerSubject.contains("ntr") || lowerSubject.contains("jr ntr")) {
-            cleanSubject = "Jr NTR RRR Indian actor";
-            wikiLookupQuery = "N._T._Rama_Rao_Jr.";
-        } else if (lowerSubject.contains("rajini") || lowerSubject.contains("rajinikanth")) {
-            cleanSubject = "Superstar Rajinikanth Indian actor";
-            wikiLookupQuery = "Rajinikanth";
-        } else if (lowerSubject.contains("elon") || lowerSubject.contains("musk")) {
-            cleanSubject = "Elon Musk";
-            wikiLookupQuery = "Elon_Musk";
-        }
-
-        String realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
+        String realWikiPhoto = (wikiLookupQuery != null && styleModifier.isEmpty()) ? fetchWikipediaRealPhoto(wikiLookupQuery) : null;
         String imageUrl;
         String engineType;
 
@@ -294,15 +335,15 @@ public class AIOrchestrator {
             engineType = "Wikimedia Commons Real Photography Archive (100% Authentic Photo)";
         } else {
             long randomSeed = System.currentTimeMillis() % 10000;
-            String rawCameraPrompt = "candid natural unedited photo of " + cleanSubject + ", shot on 35mm lens f/1.8 aperture, natural indoor daylight, soft bokeh, natural skin texture with pores, realistic hair, authentic camera snapshot";
+            String rawCameraPrompt = "candid natural unedited photo of " + fullSubjectPrompt + ", shot on 35mm lens f/1.8 aperture, natural indoor daylight, soft bokeh, natural skin texture with pores, realistic hair, authentic camera snapshot";
             String encodedQuery = rawCameraPrompt.replace(" ", "%20");
             imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=false&seed=" + randomSeed + "&width=1024&height=1024";
             engineType = "Flux-Realism 35mm Optics RAW Engine (Unedited Natural Camera Optics)";
         }
 
         return "📸 **NEXUS AI Photorealistic Camera Engine (ChatGPT DALL-E 3 Realism)**\n\n" +
-               "Here is your **100% Natural Candid DSLR Photograph** for **\"" + cleanSubject + "\"**:\n\n" +
-               "![" + cleanSubject + " natural photograph](" + imageUrl + ")\n\n" +
+               "Here is your **100% Natural Candid DSLR Photograph** for **\"" + fullSubjectPrompt + "\"**:\n\n" +
+               "![" + fullSubjectPrompt + " natural photograph](" + imageUrl + ")\n\n" +
                "> **Engine**: *" + engineType + "*  \n" +
                "> **Camera Specs**: *35mm Lens, f/1.8 Aperture, Natural Skin Pores & Daylight*  \n" +
                "> **Status**: Generated for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";
@@ -577,7 +618,7 @@ public class AIOrchestrator {
         conversationService.saveMessage(activeConvId, MessageRole.USER, prompt, null, null, null, null, null);
 
         // Check if prompt is an Image/Video Media Generation Intent
-        if (isMediaGenerationIntent(prompt)) {
+        if (isMediaGenerationIntent(prompt, activeConvId)) {
             if (!isAdminUser(userEmail, authHeader)) {
                 String restrictedMsg = "🔒 **Permission Restricted**: Image and Video generation features on NEXUS AI (saikumar-nexus.com) are restricted exclusively to Admin users. Please contact the administrator (saikumarnexus46@gmail.com) for media generation access.";
                 conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, restrictedMsg, "nexus", "security-shield", 0, 0, 0L);
@@ -590,7 +631,7 @@ public class AIOrchestrator {
                         .latencyMs(System.currentTimeMillis() - start)
                         .build();
             } else {
-                String mediaMsg = generateAdminMediaResponse(prompt, userEmail);
+                String mediaMsg = generateAdminMediaResponse(prompt, activeConvId, userEmail);
                 conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, mediaMsg, "nexus", "imagen-v2", 0, 0, 0L);
                 return AiResponse.builder()
                         .conversationId(activeConvId)
@@ -684,13 +725,13 @@ public class AIOrchestrator {
             }
 
             // Check if prompt is an Image/Video Media Generation Intent
-            if (isMediaGenerationIntent(prompt)) {
+            if (isMediaGenerationIntent(prompt, activeConvId)) {
                 if (!isAdminUser(userEmail, authHeader)) {
                     String restrictedMsg = "🔒 **Permission Restricted**: Image and Video generation features on NEXUS AI (saikumar-nexus.com) are restricted exclusively to Admin users. Please contact the administrator (saikumarnexus46@gmail.com) for media generation access.";
                     conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, restrictedMsg, "nexus", "security-shield", 0, 0, 0L);
                     return Flux.just(restrictedMsg);
                 } else {
-                    String mediaMsg = generateAdminMediaResponse(prompt, userEmail);
+                    String mediaMsg = generateAdminMediaResponse(prompt, activeConvId, userEmail);
                     conversationService.saveMessage(activeConvId, MessageRole.ASSISTANT, mediaMsg, "nexus", "imagen-v2", 0, 0, 0L);
                     return Flux.just(mediaMsg);
                 }
