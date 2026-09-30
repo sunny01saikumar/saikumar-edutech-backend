@@ -267,6 +267,68 @@ public class AIOrchestrator {
         return false;
     }
 
+    private String getDirectRealPhotoUrl(String wikiQuery) {
+        if (wikiQuery == null) return null;
+        switch (wikiQuery) {
+            case "Samantha_Ruth_Prabhu":
+                return "https://upload.wikimedia.org/wikipedia/commons/9/9a/Samantha_at_Kushi_Musical_concert_%282%29_%28cropped%29.jpg";
+            case "Kajal_Aggarwal":
+                return "https://upload.wikimedia.org/wikipedia/commons/e/e6/Kajal_Aggarwal_at_Bhagavanth_Kesari_Trailer_Launch_%281%29.jpg";
+            case "Raashii_Khanna":
+                return "https://upload.wikimedia.org/wikipedia/commons/4/4c/Raashi_Khanna_at_the_premiere_of_film_12th_Fail_%28cropped%29.jpg";
+            case "Rashmika_Mandanna":
+                return "https://upload.wikimedia.org/wikipedia/commons/2/23/Rashmika_Mandanna_at_Animal_pre_release_event_%281%29.jpg";
+            case "Deepika_Padukone":
+                return "https://upload.wikimedia.org/wikipedia/commons/b/b6/Deepika_Padukone_Cannes_2018_%28cropped%29.jpg";
+            case "Alia_Bhatt":
+                return "https://upload.wikimedia.org/wikipedia/commons/1/10/Alia_Bhatt_at_Gucci_Cruise_2024_in_Seoul_%28cropped%29.jpg";
+            case "Katrina_Kaif":
+                return "https://upload.wikimedia.org/wikipedia/commons/8/8b/Katrina_Kaif_promoting_Bharat_in_2019.jpg";
+            case "Tamannaah_Bhatia":
+                return "https://upload.wikimedia.org/wikipedia/commons/e/e0/Tamannaah_Bhatia_at_Jailer_audio_launch.jpg";
+            case "Kriti_Sanon":
+                return "https://upload.wikimedia.org/wikipedia/commons/0/07/Kriti_Sanon_at_Adipurush_Pre_Release_Event_%28cropped%29.jpg";
+            case "Shraddha_Kapoor":
+                return "https://upload.wikimedia.org/wikipedia/commons/2/23/Shraddha_Kapoor_promoting_Tu_Jhoothi_Main_Makkaar.jpg";
+            case "Kiara_Advani":
+                return "https://upload.wikimedia.org/wikipedia/commons/9/9b/Kiara_Advani_at_Satyaprem_Ki_Katha_trailer_launch.jpg";
+            case "Pooja_Hegde":
+                return "https://upload.wikimedia.org/wikipedia/commons/1/18/Pooja_Hegde_at_Cannes_2022.jpg";
+            case "Keerthy_Suresh":
+                return "https://upload.wikimedia.org/wikipedia/commons/6/6f/Keerthy_Suresh_at_Dasara_trailer_launch.jpg";
+            case "Mrunal_Thakur":
+                return "https://upload.wikimedia.org/wikipedia/commons/e/ec/Mrunal_Thakur_at_Sita_Ramam_pre_release_event.jpg";
+            case "Sreeleela":
+                return "https://upload.wikimedia.org/wikipedia/commons/f/f6/Sreeleela_at_Skanda_pre_release_event.jpg";
+            case "Narendra_Modi":
+                return "https://upload.wikimedia.org/wikipedia/commons/b/ba/Narendra_Modi_Portrait_2026.jpg";
+            case "Virat_Kohli":
+                return "https://upload.wikimedia.org/wikipedia/commons/e/ef/Virat_Kohli_during_the_India_vs_Aus_4th_Test_match_at_Narendra_Modi_Stadium_on_09_March_2023.jpg";
+            case "MS_Dhoni":
+                return "https://upload.wikimedia.org/wikipedia/commons/7/70/MS_Dhoni_%28Prabal_Gurung_Fashion_Show_2019%29.jpg";
+            case "Shah_Rukh_Khan":
+                return "https://upload.wikimedia.org/wikipedia/commons/6/6e/Shah_Rukh_Khan_graces_the_launch_of_the_book_%27To_Moon_And_Back%27_%28cropped%29.jpg";
+            case "Prabhas":
+                return "https://upload.wikimedia.org/wikipedia/commons/5/52/Prabhas_at_Adipurush_Pre_Release_Event_%28cropped%29.jpg";
+            case "Allu_Arjun":
+                return "https://upload.wikimedia.org/wikipedia/commons/a/a2/Allu_Arjun_at_Pushpa_press_meet_%28cropped%29.jpg";
+            case "Pawan_Kalyan":
+                return "https://upload.wikimedia.org/wikipedia/commons/2/21/Pawan_Kalyan_at_Bheemla_Nayak_pre_release_event.jpg";
+            case "Mahesh_Babu":
+                return "https://upload.wikimedia.org/wikipedia/commons/9/9a/Mahesh_Babu_in_2018.jpg";
+            case "Ram_Charan":
+                return "https://upload.wikimedia.org/wikipedia/commons/6/63/Ram_Charan_at_RRR_press_meet.jpg";
+            case "N._T._Rama_Rao_Jr.":
+                return "https://upload.wikimedia.org/wikipedia/commons/c/c5/Jr_NTR_at_RRR_press_meet.jpg";
+            case "Rajinikanth":
+                return "https://upload.wikimedia.org/wikipedia/commons/5/58/Rajinikanth_at_Jailer_audio_launch.jpg";
+            case "Elon_Musk":
+                return "https://upload.wikimedia.org/wikipedia/commons/3/34/Elon_Musk_Royal_Society_%28crop2%29.jpg";
+            default:
+                return null;
+        }
+    }
+
     private String fetchWikipediaRealPhoto(String searchSubject) {
         try {
             String cleanTitle = searchSubject.replaceAll("(?i)\\b(Indian|actor|actress|Prime|Minister|Cricket|Captain|Legend|politician|Superstar|South|Baahubali|Pushpa|RRR)\\b", "").trim();
@@ -275,12 +337,12 @@ public class AIOrchestrator {
 
             java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
                     .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
-                    .connectTimeout(java.time.Duration.ofSeconds(2))
+                    .connectTimeout(java.time.Duration.ofSeconds(5))
                     .build();
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create("https://en.wikipedia.org/api/rest_v1/page/summary/" + java.net.URLEncoder.encode(cleanTitle, java.nio.charset.StandardCharsets.UTF_8)))
                     .header("User-Agent", "NexusAI/1.0 (https://saikumar-nexus.com; admin@saikumar-nexus.com)")
-                    .timeout(java.time.Duration.ofSeconds(3))
+                    .timeout(java.time.Duration.ofSeconds(8))
                     .GET()
                     .build();
             java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
@@ -346,7 +408,11 @@ public class AIOrchestrator {
 
         String fullSubjectPrompt = cleanSubject + (!styleModifier.isEmpty() ? " in " + styleModifier : "");
 
-        String realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
+        String realWikiPhoto = getDirectRealPhotoUrl(wikiLookupQuery);
+        if (realWikiPhoto == null) {
+            realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
+        }
+
         String imageUrl;
         String engineType;
 
