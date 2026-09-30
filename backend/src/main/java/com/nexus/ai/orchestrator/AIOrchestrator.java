@@ -130,17 +130,22 @@ public class AIOrchestrator {
     private boolean isCodingOrDeployIntent(String prompt) {
         if (prompt == null) return false;
         if (isMediaGenerationIntent(prompt)) return false;
-        String lower = prompt.toLowerCase();
-        return lower.contains("code") || lower.contains("fix") || lower.contains("deploy") ||
-               lower.contains("push") || lower.contains("git") || lower.contains("build") ||
-               lower.contains("refactor") || lower.contains("analysis") || lower.contains("file") ||
-               lower.contains("create app") || lower.contains("create file") || lower.contains("create endpoint") ||
-               lower.contains("create class") || lower.contains("java") || lower.contains("spring") ||
-               lower.contains("endpoint") || lower.contains("c:\\") || lower.contains("github") ||
-               lower.contains("disappearing") || lower.contains("repository") || lower.contains("nexus") ||
-               lower.contains("directory") || lower.contains("update") || lower.contains("modify") ||
-               lower.contains("write") || lower.contains("script") || lower.contains("bug") ||
-               lower.contains("error") || lower.contains("patch");
+        String lower = prompt.toLowerCase().trim();
+
+        // Educational/Q&A code requests should go to standard LLM chat streaming, NOT workspace file editor
+        if (lower.startsWith("explain") || lower.startsWith("what is") || lower.startsWith("how to") ||
+            lower.startsWith("give me") || lower.startsWith("show me") || lower.startsWith("write an example") ||
+            lower.contains("example") || lower.contains("tutorial") || lower.contains("question") ||
+            lower.contains("concept") || lower.contains("meaning") || lower.contains("definition")) {
+            return false;
+        }
+
+        return lower.contains("build app") || lower.contains("create app") || lower.contains("deploy app") ||
+               lower.contains("git push") || lower.contains("mvnw") || lower.contains("npm run") ||
+               lower.contains("fix bug") || lower.contains("refactor file") || lower.contains("edit file") ||
+               lower.contains("create file") || lower.contains("create endpoint") || lower.contains("create class") ||
+               lower.contains("c:\\") || lower.contains("repository") || lower.contains("deploy webhook") ||
+               lower.contains("modify source") || lower.contains("write code to file");
     }
 
     private boolean isMediaGenerationIntent(String prompt) {
@@ -561,8 +566,12 @@ public class AIOrchestrator {
                         fullTranscript.append(finalSummary);
                         finished = true;
                     } else {
-                        // Model generated reasoning prose without TOOL: or FINAL:
-                        if (step == 1) {
+                        // Model generated direct response prose without TOOL: or FINAL:
+                        if (content != null && !content.trim().isEmpty()) {
+                            emitter.next(content);
+                            fullTranscript.append(content);
+                            finished = true;
+                        } else if (step == 1) {
                             String toolHeader = "\n\n🛠️ **[NEXUS CODING AGENT - STEP 1]**: Executing `file_reader`...\n";
                             emitter.next(toolHeader);
                             fullTranscript.append(toolHeader);
@@ -574,10 +583,6 @@ public class AIOrchestrator {
 
                             loopMessages.add(AiRequest.ChatMessage.builder().role("assistant").content("TOOL: file_reader\nARGS: {\"filePath\": \"./\"}").build());
                             loopMessages.add(AiRequest.ChatMessage.builder().role("user").content("Workspace directory inspection result:\n" + toolOutput + "\nNow inspect source files using TOOL: file_reader or write code changes using TOOL: file_writer.").build());
-                        } else {
-                            emitter.next(content);
-                            fullTranscript.append(content);
-                            finished = true;
                         }
                     }
                 }
