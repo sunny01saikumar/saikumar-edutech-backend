@@ -48,7 +48,7 @@ function GeneratedImageCard({ src, alt }) {
         alt={alt || "Generated Image"}
         onLoad={() => setLoaded(true)}
         onError={handleError}
-        className={`w-full h-auto max-h-[500px] object-cover rounded-xl shadow-lg border border-gray-800/80 transition-opacity duration-500 ${
+        className={`w-full h-auto object-contain rounded-xl shadow-lg border border-gray-800/80 transition-opacity duration-500 ${
           loaded ? 'opacity-100 block' : 'opacity-0 absolute top-2 left-2 right-2'
         }`}
       />
