@@ -183,6 +183,16 @@ public class AIOrchestrator {
         if (lower.contains("kajol")) return "Kajol";
         if (lower.contains("samantha")) return "Samantha_Ruth_Prabhu";
         if (lower.contains("rashmika")) return "Rashmika_Mandanna";
+        if (lower.contains("rashi") || lower.contains("raashi") || lower.contains("raashii")) return "Raashii_Khanna";
+        if (lower.contains("tamanna") || lower.contains("tamannaah")) return "Tamannaah_Bhatia";
+        if (lower.contains("kriti")) return "Kriti_Sanon";
+        if (lower.contains("shraddha")) return "Shraddha_Kapoor";
+        if (lower.contains("kiara")) return "Kiara_Advani";
+        if (lower.contains("pooja")) return "Pooja_Hegde";
+        if (lower.contains("keerthy")) return "Keerthy_Suresh";
+        if (lower.contains("mrunal")) return "Mrunal_Thakur";
+        if (lower.contains("sreeleela") || lower.contains("sri leela")) return "Sreeleela";
+        if (lower.contains("nidhhi") || lower.contains("nidhi")) return "Nidhhi_Agerwal";
         if (lower.contains("deepika")) return "Deepika_Padukone";
         if (lower.contains("alia")) return "Alia_Bhatt";
         if (lower.contains("katrina")) return "Katrina_Kaif";
@@ -211,6 +221,16 @@ public class AIOrchestrator {
             case "Kajol": return "Kajol Devgan Indian actress";
             case "Samantha_Ruth_Prabhu": return "Samantha Ruth Prabhu Indian actress";
             case "Rashmika_Mandanna": return "Rashmika Mandanna Indian actress";
+            case "Raashii_Khanna": return "Raashii Khanna Indian actress";
+            case "Tamannaah_Bhatia": return "Tamannaah Bhatia Indian actress";
+            case "Kriti_Sanon": return "Kriti Sanon Indian actress";
+            case "Shraddha_Kapoor": return "Shraddha Kapoor Indian actress";
+            case "Kiara_Advani": return "Kiara Advani Indian actress";
+            case "Pooja_Hegde": return "Pooja Hegde Indian actress";
+            case "Keerthy_Suresh": return "Keerthy Suresh Indian actress";
+            case "Mrunal_Thakur": return "Mrunal Thakur Indian actress";
+            case "Sreeleela": return "Sreeleela Indian actress";
+            case "Nidhhi_Agerwal": return "Nidhhi Agerwal Indian actress";
             case "Deepika_Padukone": return "Deepika Padukone Indian actress";
             case "Alia_Bhatt": return "Alia Bhatt Indian actress";
             case "Katrina_Kaif": return "Katrina Kaif Indian actress";
@@ -290,13 +310,13 @@ public class AIOrchestrator {
 
         String lowerPrompt = prompt.toLowerCase();
         String styleModifier = "";
-        if (lowerPrompt.contains("hot") || lowerPrompt.contains("glamour") || lowerPrompt.contains("glam")) {
+        if (lowerPrompt.matches(".*\\b(hot|glamour|glam)\\b.*")) {
             styleModifier = "stylish glamour photoshoot";
-        } else if (lowerPrompt.contains("saree")) {
+        } else if (lowerPrompt.matches(".*\\b(saree|sari)\\b.*")) {
             styleModifier = "traditional saree attire";
-        } else if (lowerPrompt.contains("dress") || lowerPrompt.contains("outfit")) {
+        } else if (lowerPrompt.matches(".*\\b(dress|outfit)\\b.*")) {
             styleModifier = "modern fashion outfit";
-        } else if (lowerPrompt.contains("full")) {
+        } else if (lowerPrompt.matches(".*\\b(full)\\b.*")) {
             styleModifier = "full length portrait shot";
         }
 
@@ -326,11 +346,11 @@ public class AIOrchestrator {
 
         String fullSubjectPrompt = cleanSubject + (!styleModifier.isEmpty() ? " in " + styleModifier : "");
 
-        String realWikiPhoto = (wikiLookupQuery != null && styleModifier.isEmpty()) ? fetchWikipediaRealPhoto(wikiLookupQuery) : null;
+        String realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
         String imageUrl;
         String engineType;
 
-        if (realWikiPhoto != null) {
+        if (realWikiPhoto != null && styleModifier.isEmpty()) {
             imageUrl = realWikiPhoto;
             engineType = "Wikimedia Commons Real Photography Archive (100% Authentic Photo)";
         } else {
