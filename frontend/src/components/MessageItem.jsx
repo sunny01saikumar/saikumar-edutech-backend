@@ -8,13 +8,18 @@ function GeneratedImageCard({ src, alt }) {
   const [loaded, setLoaded] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const cleanSubject = encodeURIComponent((alt || "image").replace(/[^a-zA-Z0-9 ]/g, "").trim());
+  const cleanSubject = encodeURIComponent((alt || "image").replace(/[^a-zA-Z0-9 ]/g, "").trim() || "portrait");
 
   const handleError = () => {
-    if (currentSrc && currentSrc.includes("image.pollinations.ai")) {
+    if (retryCount === 0 && currentSrc && currentSrc.includes("image.pollinations.ai")) {
+      setRetryCount(1);
       setCurrentSrc(`https://pollinations.ai/p/${cleanSubject}?width=800&height=800&seed=42&nologo=true`);
-    } else if (!hasError) {
+    } else if (retryCount < 2) {
+      setRetryCount(prev => prev + 1);
+      setCurrentSrc(`https://pollinations.ai/p/${cleanSubject}?width=800&height=800&seed=${Date.now()}&nologo=true`);
+    } else {
       setHasError(true);
     }
   };
@@ -22,11 +27,12 @@ function GeneratedImageCard({ src, alt }) {
   useEffect(() => {
     setLoaded(false);
     setHasError(false);
+    setRetryCount(0);
     const sanitizedSrc = src ? src.replace(/\(/g, '%28').replace(/\)/g, '%29') : src;
     setCurrentSrc(sanitizedSrc);
 
-    // Safety timeout fallback only for AI image generation streams, NOT for authentic real photos
-    if (sanitizedSrc && !sanitizedSrc.includes("wikimedia")) {
+    // Safety timeout fallback (30s) only for AI image generation streams, NOT for static authentic photos
+    if (sanitizedSrc && !sanitizedSrc.includes("wikimedia") && !sanitizedSrc.includes("wikipedia")) {
       const timer = setTimeout(() => {
         setLoaded(prev => {
           if (!prev) {
@@ -34,7 +40,7 @@ function GeneratedImageCard({ src, alt }) {
           }
           return prev;
         });
-      }, 12000);
+      }, 30000);
       return () => clearTimeout(timer);
     }
   }, [src]);
@@ -48,10 +54,10 @@ function GeneratedImageCard({ src, alt }) {
             <Sparkles className="w-5 h-5 text-cyan-400" />
           </div>
           <p className="text-xs font-semibold text-cyan-300 font-mono tracking-wide">
-            Synthesizing AI High-Res Image...
+            Synthesizing AI High-Res Media Stream...
           </p>
           <span className="text-[11px] text-gray-400 font-sans">
-            Rendering HD portrait for "{alt || 'Requested Image'}"
+            Rendering HD frame for "{alt || 'Requested Media'}"
           </span>
         </div>
       )}
@@ -75,6 +81,7 @@ function GeneratedImageCard({ src, alt }) {
             onClick={() => {
               setHasError(false);
               setLoaded(false);
+              setRetryCount(0);
               setCurrentSrc(`https://pollinations.ai/p/${cleanSubject}?width=800&height=800&nologo=true&seed=` + Date.now());
             }}
             className="px-3 py-1 rounded bg-cyan-900/60 hover:bg-cyan-800 text-white font-medium text-[11px] transition-colors"
