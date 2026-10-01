@@ -109,6 +109,11 @@ public class ModelRouter {
             case "gemini":
                 return "gemini-1.5-pro";
             case "ollama":
+                if ("coding".equals(category)) {
+                    return "qwen2.5-coder:7b";
+                } else if ("reasoning".equals(category)) {
+                    return "deepseek-r1:7b";
+                }
                 return "llama3";
             default:
                 return null;
