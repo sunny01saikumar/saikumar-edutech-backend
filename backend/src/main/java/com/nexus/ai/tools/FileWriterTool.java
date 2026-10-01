@@ -73,6 +73,18 @@ public class FileWriterTool implements Tool {
                     .build();
         }
 
+        if (ToolSecurityUtils.isPathSensitive(pathStr)) {
+            log.warn("Access denied writing to sensitive target path: [{}]", pathStr);
+            return ToolCall.builder()
+                    .id(UUID.randomUUID().toString())
+                    .toolName(getName())
+                    .arguments(arguments)
+                    .result("Security Exception: Writing to sensitive system/database file or directory [" + pathStr + "] is restricted.")
+                    .success(false)
+                    .executionTimeMs(System.currentTimeMillis() - start)
+                    .build();
+        }
+
         if (content == null) {
             content = "";
         }

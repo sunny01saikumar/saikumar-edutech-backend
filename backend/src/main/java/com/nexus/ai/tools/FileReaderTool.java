@@ -56,6 +56,18 @@ public class FileReaderTool implements Tool {
             pathStr = "./"; // Default to root project workspace
         }
 
+        if (ToolSecurityUtils.isPathSensitive(pathStr)) {
+            log.warn("Access denied for sensitive path request: [{}]", pathStr);
+            return ToolCall.builder()
+                    .id(UUID.randomUUID().toString())
+                    .toolName(getName())
+                    .arguments(arguments)
+                    .result("Security Exception: Access to sensitive system/database file or directory [" + pathStr + "] is restricted.")
+                    .success(false)
+                    .executionTimeMs(System.currentTimeMillis() - start)
+                    .build();
+        }
+
         try {
             Path path = Paths.get(pathStr);
 
@@ -176,6 +188,7 @@ public class FileReaderTool implements Tool {
                     .map(root::relativize)
                     .map(Path::toString)
                     .filter(p -> !p.contains(".git") && !p.contains("node_modules") && !p.contains("target") && !p.contains(".idea") && !p.contains(".mvn"))
+                    .filter(p -> !ToolSecurityUtils.isPathSensitive(p))
                     .limit(100)
                     .collect(java.util.stream.Collectors.toList());
 
@@ -281,7 +294,7 @@ public class FileReaderTool implements Tool {
                     int end = json.indexOf("\"", idx);
                     if (end != -1) {
                         String p = json.substring(idx, end);
-                        if (!p.contains(".git") && !p.contains("target/") && !p.contains("node_modules/")) {
+                        if (!p.contains(".git") && !p.contains("target/") && !p.contains("node_modules/") && !ToolSecurityUtils.isPathSensitive(p)) {
                             paths.add(p);
                         }
                         idx = end;

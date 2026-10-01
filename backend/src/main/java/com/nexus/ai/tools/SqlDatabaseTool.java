@@ -40,6 +40,18 @@ public class SqlDatabaseTool implements Tool {
     public ToolCall execute(Map<String, Object> arguments) {
         long start = System.currentTimeMillis();
         String sql = String.valueOf(arguments.get("sql"));
+        String lowerSql = sql.toLowerCase(Locale.ROOT);
+
+        if (lowerSql.contains("password") || lowerSql.contains("hash") || lowerSql.contains("jwt") || lowerSql.contains("secret") || lowerSql.contains("users") || lowerSql.contains("token_quota") || lowerSql.contains("drop") || lowerSql.contains("truncate") || lowerSql.contains("delete")) {
+            return ToolCall.builder()
+                    .id(UUID.randomUUID().toString())
+                    .toolName(getName())
+                    .arguments(arguments)
+                    .result("Security Exception: Direct SQL queries targeting sensitive user credentials or data modification are restricted.")
+                    .success(false)
+                    .executionTimeMs(System.currentTimeMillis() - start)
+                    .build();
+        }
 
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);

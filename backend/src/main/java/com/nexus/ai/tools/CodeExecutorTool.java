@@ -40,6 +40,17 @@ public class CodeExecutorTool implements Tool {
         String command = String.valueOf(arguments.get("command"));
         String workingDirStr = arguments.containsKey("workingDirectory") ? String.valueOf(arguments.get("workingDirectory")) : ".";
 
+        if (ToolSecurityUtils.isCommandSensitive(command) || ToolSecurityUtils.isPathSensitive(workingDirStr)) {
+            return ToolCall.builder()
+                    .id(UUID.randomUUID().toString())
+                    .toolName(getName())
+                    .arguments(arguments)
+                    .result("Security Exception: Executing commands targeting sensitive system/database files or paths is restricted.")
+                    .success(false)
+                    .executionTimeMs(System.currentTimeMillis() - start)
+                    .build();
+        }
+
         try {
             boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
             ProcessBuilder processBuilder = new ProcessBuilder();
