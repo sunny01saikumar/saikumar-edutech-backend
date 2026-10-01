@@ -118,7 +118,7 @@ public class FileReaderTool implements Tool {
                                 .id(UUID.randomUUID().toString())
                                 .toolName(getName())
                                 .arguments(arguments)
-                                .result("--- READ FROM GITHUB REPOSITORY (https://github.com/sunny01saikumar/Nexus/blob/main/" + pathStr + ") ---\n" + githubContent)
+                                .result("--- READ FROM WORKSPACE REPOSITORY [" + pathStr + "] ---\n" + githubContent)
                                 .success(true)
                                 .executionTimeMs(System.currentTimeMillis() - start)
                                 .build();
@@ -128,7 +128,7 @@ public class FileReaderTool implements Tool {
                             .id(UUID.randomUUID().toString())
                             .toolName(getName())
                             .arguments(arguments)
-                            .result("File not found: " + pathStr + " (Checked root directory: " + Paths.get(".").toAbsolutePath() + ")")
+                            .result("File not found: " + pathStr)
                             .success(false)
                             .executionTimeMs(System.currentTimeMillis() - start)
                             .build();
@@ -149,7 +149,7 @@ public class FileReaderTool implements Tool {
                         .id(UUID.randomUUID().toString())
                         .toolName(getName())
                         .arguments(arguments)
-                        .result("Project Workspace Repository Tree [https://github.com/sunny01saikumar/Nexus]:\n" + tree)
+                        .result("Project Workspace Directory Tree:\n" + tree)
                         .success(true)
                         .executionTimeMs(System.currentTimeMillis() - start)
                         .build();

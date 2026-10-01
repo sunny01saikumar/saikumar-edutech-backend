@@ -93,9 +93,30 @@ public class FileWriterTool implements Tool {
             Path path = Paths.get(pathStr);
 
             // Handle Windows absolute path translation for Linux hosting containers
-            if (!Files.exists(path) && (pathStr.contains(":\\") || pathStr.contains(":/"))) {
-                String fileName = Paths.get(pathStr).getFileName() != null ? Paths.get(pathStr).getFileName().toString() : "output.txt";
+            if (pathStr.contains(":\\") || pathStr.contains(":/")) {
+                String fileName = Paths.get(pathStr).getFileName() != null ? Paths.get(pathStr).getFileName().toString() : "my_folder";
                 path = Paths.get("./" + fileName);
+            }
+
+            boolean isDirectoryRequest = pathStr.endsWith("/") || pathStr.endsWith("\\") || 
+                    (!path.getFileName().toString().contains(".") && (content == null || content.trim().isEmpty() || content.equalsIgnoreCase("directory") || content.equalsIgnoreCase("folder")));
+
+            if (isDirectoryRequest) {
+                Files.createDirectories(path);
+                Path keepFile = path.resolve(".gitkeep");
+                if (!Files.exists(keepFile)) {
+                    Files.writeString(keepFile, "# Folder created by NEXUS AI", StandardOpenOption.CREATE);
+                }
+                String folderName = path.getFileName().toString();
+                log.info("FileWriterTool created directory [{}]", folderName);
+                return ToolCall.builder()
+                        .id(UUID.randomUUID().toString())
+                        .toolName(getName())
+                        .arguments(arguments)
+                        .result("Directory [" + folderName + "] created successfully in NEXUS Workspace. Download Folder ZIP: [📦 Download " + folderName + ".zip](/api/files/download-zip?folderPath=" + folderName + ")")
+                        .success(true)
+                        .executionTimeMs(System.currentTimeMillis() - start)
+                        .build();
             }
 
             if (path.getParent() != null) {
@@ -103,13 +124,14 @@ public class FileWriterTool implements Tool {
             }
 
             Files.writeString(path, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            log.info("FileWriterTool wrote {} bytes to file [{}]", content.length(), path.toAbsolutePath());
+            String relativeFileName = path.getFileName().toString();
+            log.info("FileWriterTool wrote {} bytes to file [{}]", content.length(), relativeFileName);
 
             return ToolCall.builder()
                     .id(UUID.randomUUID().toString())
                     .toolName(getName())
                     .arguments(arguments)
-                    .result("File [" + path.toAbsolutePath() + "] updated successfully (" + content.length() + " characters written).")
+                    .result("File [" + relativeFileName + "] created/updated successfully (" + content.length() + " characters written). Download File: [📥 Download " + relativeFileName + "](/api/files/download?filePath=" + relativeFileName + ")")
                     .success(true)
                     .executionTimeMs(System.currentTimeMillis() - start)
                     .build();

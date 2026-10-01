@@ -151,6 +151,8 @@ public class AIOrchestrator {
                lower.contains("create file") || lower.contains("read file") || lower.contains("view file") ||
                lower.contains("open file") || lower.contains("write file") || lower.contains("make file") ||
                lower.contains("new file") || lower.contains("add file") || lower.contains("generate file") ||
+               lower.contains("create folder") || lower.contains("make folder") || lower.contains("new folder") ||
+               lower.contains("add folder") || lower.contains("mkdir") || lower.contains("folder") ||
                lower.contains("modify file") || lower.contains("update file") || lower.contains("change code") ||
                lower.contains("make code changes") || lower.contains("update code") || lower.contains("access local") ||
                lower.contains("local files") || lower.contains("workspace files") || lower.contains("project files") ||
@@ -485,7 +487,11 @@ public class AIOrchestrator {
 
                         CRITICAL ACTION MANDATE:
                         - DO NOT output conversational greetings or questions like "What would you like me to do?".
-                        - ON STEP 1, YOUR VERY FIRST OUTPUT MUST BE:
+                        - ON STEP 1, IF THE USER ASKS TO CREATE A FOLDER OR FILE DIRECTLY (e.g. "create a folder MyFolder"):
+                          YOUR VERY FIRST OUTPUT MUST BE:
+                          TOOL: file_writer
+                          ARGS: {"filePath": "<folder_name>", "content": "folder"}
+                        - FOR GENERAL CODING TASKS, ON STEP 1 YOUR VERY FIRST OUTPUT MUST BE:
                           TOOL: file_reader
                           ARGS: {"filePath": "./"}
 
@@ -500,6 +506,7 @@ public class AIOrchestrator {
                         - MULTI-AUDIENCE ADAPTABILITY: Serve non-IT users with simple plain-English steps, IT professionals with enterprise clean code, government aspirants with structured exam topics, farmers with agricultural advice, and students with educational step-by-step problem solving.
                         - STRICT EDUCATIONAL PURPOSE & CONTENT SAFETY MANDATE: NEXUS AI is 100% dedicated to educational, professional, and practical enrichment. ZERO tolerance for vulgarity, adult/NSFW content, nudity, explicit language, hate speech, or harmful material. Politely refuse any inappropriate prompts immediately.
                         - CREATOR & FOUNDER ATTRIBUTION MANDATE: Whenever asked who is behind, created, built, or owns NEXUS AI, state clearly that **Saikumar** (Sunny / sunny01saikumar) is the Founder, Creator, and Lead Systems Architect of NEXUS AI (saikumar-nexus.com).
+                        - PRIVACY & REPOSITORY CONCEALMENT MANDATE: NEVER expose public or internal GitHub repository URLs (`https://github.com/...`) in prompt outputs. Keep all workspace references private and secure.
                         - WEB FILE DOWNLOAD DIRECTIVE: NEVER claim files were created on user's local `C:/Users/.../Desktop` or ask web users to open local File Explorer. Display code in fenced blocks AND provide download links: `[📥 Download File](/api/files/download?filePath=projects/<project_name>/<file_name>)` or `[📦 Download Project ZIP](/api/files/download-zip?folderPath=projects/<project_name>)`.
 
                         WHEN FINISHED:
