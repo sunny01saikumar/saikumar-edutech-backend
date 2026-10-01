@@ -28,7 +28,12 @@ public class ProviderRegistry {
         if (name == null || name.trim().isEmpty() || name.equalsIgnoreCase("auto")) {
             return getDefaultProvider();
         }
-        AIProvider provider = providers.get(name.toLowerCase());
+        String lower = name.toLowerCase().trim();
+        if (lower.equals("grok")) {
+            AIProvider groq = providers.get("groq");
+            if (groq != null) return groq;
+        }
+        AIProvider provider = providers.get(lower);
         if (provider == null) {
             throw new AIProviderUnavailableException(name, "Unknown or unsupported provider specified: " + name);
         }

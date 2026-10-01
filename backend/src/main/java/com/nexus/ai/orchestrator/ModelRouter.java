@@ -45,7 +45,15 @@ public class ModelRouter {
         // Intelligent Auto Router: Match key pattern if customApiKey is provided
         if (customApiKey != null && !customApiKey.trim().isEmpty()) {
             String key = customApiKey.trim();
-            if (key.startsWith("AIza")) {
+            if (key.startsWith("gsk_")) {
+                AIProvider groq = providerRegistry.getProvider("groq");
+                String model = (requestedModel != null && !requestedModel.isEmpty()) ? requestedModel : "qwen-2.5-coder-32b";
+                return new RouteDecision(groq, model, "custom-key-auto");
+            } else if (key.startsWith("xai-")) {
+                AIProvider grok = providerRegistry.getProvider("openai-compatible");
+                String model = (requestedModel != null && !requestedModel.isEmpty()) ? requestedModel : "grok-2-latest";
+                return new RouteDecision(grok, model, "custom-key-auto");
+            } else if (key.startsWith("AIza")) {
                 AIProvider gemini = providerRegistry.getProvider("gemini");
                 String model = (requestedModel != null && !requestedModel.isEmpty()) ? requestedModel : "gemini-1.5-flash";
                 return new RouteDecision(gemini, model, "custom-key-auto");
