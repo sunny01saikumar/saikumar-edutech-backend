@@ -132,18 +132,29 @@ public class AIOrchestrator {
         if (isMediaGenerationIntent(prompt)) return false;
         String lower = prompt.toLowerCase().trim();
 
-        // Educational/Q&A code requests should go to standard LLM chat streaming, NOT workspace file editor
-        if (lower.startsWith("explain") || lower.startsWith("what is") || lower.startsWith("how to") ||
+        boolean explicitlyTargetsWorkspaceFiles = lower.contains("file") || lower.contains("workspace") ||
+                lower.contains("project") || lower.contains("local") || lower.contains("codebase") ||
+                lower.contains("c:\\") || lower.contains("./") || lower.contains("directory");
+
+        // Educational/Q&A code requests (without explicit file/workspace target) go to standard LLM chat streaming
+        if (!explicitlyTargetsWorkspaceFiles && (
+            lower.startsWith("explain") || lower.startsWith("what is") || lower.startsWith("how to") ||
             lower.startsWith("give me") || lower.startsWith("show me") || lower.startsWith("write an example") ||
             lower.contains("example") || lower.contains("tutorial") || lower.contains("question") ||
-            lower.contains("concept") || lower.contains("meaning") || lower.contains("definition")) {
+            lower.contains("concept") || lower.contains("meaning") || lower.contains("definition"))) {
             return false;
         }
 
         return lower.contains("build app") || lower.contains("create app") || lower.contains("deploy app") ||
                lower.contains("git push") || lower.contains("mvnw") || lower.contains("npm run") ||
-               lower.contains("fix bug") || lower.contains("refactor file") || lower.contains("edit file") ||
-               lower.contains("create file") || lower.contains("create endpoint") || lower.contains("create class") ||
+               lower.contains("fix bug") || lower.contains("refactor") || lower.contains("edit file") ||
+               lower.contains("create file") || lower.contains("read file") || lower.contains("view file") ||
+               lower.contains("open file") || lower.contains("write file") || lower.contains("make file") ||
+               lower.contains("new file") || lower.contains("add file") || lower.contains("generate file") ||
+               lower.contains("modify file") || lower.contains("update file") || lower.contains("change code") ||
+               lower.contains("make code changes") || lower.contains("update code") || lower.contains("access local") ||
+               lower.contains("local files") || lower.contains("workspace files") || lower.contains("project files") ||
+               lower.contains("create endpoint") || lower.contains("create class") || lower.contains("create component") ||
                lower.contains("c:\\") || lower.contains("repository") || lower.contains("deploy webhook") ||
                lower.contains("modify source") || lower.contains("write code to file");
     }
