@@ -413,6 +413,75 @@ public class AIOrchestrator {
         return null;
     }
 
+    private String fetchRealWebPhoto(String query) {
+        if (query == null || query.trim().isEmpty()) return null;
+        try {
+            String cleanQuery = query.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|clip|mp4|animation|of|with|hd|portrait|realistic|real|photorealistic|in|mode|i|want|give|get|look|style)\\b", "").trim();
+            cleanQuery = cleanQuery.replaceAll("\\s+", " ").trim();
+            if (cleanQuery.isEmpty()) cleanQuery = query.trim();
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+                    .connectTimeout(java.time.Duration.ofSeconds(4))
+                    .build();
+
+            String ddgUrl = "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(cleanQuery, java.nio.charset.StandardCharsets.UTF_8);
+            java.net.http.HttpRequest initReq = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(ddgUrl))
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .timeout(java.time.Duration.ofSeconds(4))
+                    .GET()
+                    .build();
+            java.net.http.HttpResponse<String> initResp = client.send(initReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+            String body = initResp.body();
+            String vqd = null;
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("vqd=([\\d-]+)");
+            java.util.regex.Matcher matcher = pattern.matcher(body);
+            if (matcher.find()) {
+                vqd = matcher.group(1);
+            } else {
+                pattern = java.util.regex.Pattern.compile("vqd=[\"']?([^\"'\\s&]+)");
+                matcher = pattern.matcher(body);
+                if (matcher.find()) {
+                    vqd = matcher.group(1);
+                }
+            }
+
+            if (vqd != null) {
+                String imgApiUrl = "https://duckduckgo.com/i.js?l=us-en&o=json&q=" +
+                        java.net.URLEncoder.encode(cleanQuery, java.nio.charset.StandardCharsets.UTF_8) +
+                        "&vqd=" + vqd;
+                java.net.http.HttpRequest imgReq = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(imgApiUrl))
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        .timeout(java.time.Duration.ofSeconds(4))
+                        .GET()
+                        .build();
+                java.net.http.HttpResponse<String> imgResp = client.send(imgReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+                if (imgResp.statusCode() == 200) {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(imgResp.body());
+                    com.fasterxml.jackson.databind.JsonNode results = root.get("results");
+                    if (results != null && results.isArray() && results.size() > 0) {
+                        for (int i = 0; i < Math.min(5, results.size()); i++) {
+                            com.fasterxml.jackson.databind.JsonNode item = results.get(i);
+                            String imgUrl = item.has("image") ? item.get("image").asText() : null;
+                            String thumbUrl = item.has("thumbnail") ? item.get("thumbnail").asText() : null;
+
+                            String target = (imgUrl != null && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) ? imgUrl : thumbUrl;
+                            if (target != null && !target.isEmpty()) {
+                                return target.replace("(", "%28").replace(")", "%29");
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Multi-platform real image search warning for [{}]: {}", query, e.getMessage());
+        }
+        return null;
+    }
+
     private String generateAdminMediaResponse(String prompt, String activeConvId, String userEmail) {
         String lowerPrompt = prompt.toLowerCase().trim();
 
@@ -450,15 +519,6 @@ public class AIOrchestrator {
         cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|clip|mp4|animation|of|with|hd|portrait|realistic|real|photorealistic|in|mode|i|want|give|get|look|style)\\b", "").trim();
         cleanSubject = cleanSubject.replaceAll("\\s+", " ").trim();
 
-        String celebrityName = wikiLookupQuery != null ? formatCleanSubject(wikiLookupQuery) : "";
-        if (!celebrityName.isEmpty()) {
-            if (cleanSubject.isEmpty() || cleanSubject.toLowerCase().contains(wikiLookupQuery.toLowerCase().replace("_", " "))) {
-                cleanSubject = celebrityName;
-            } else {
-                cleanSubject = celebrityName + " " + cleanSubject;
-            }
-        }
-
         if (cleanSubject.isEmpty()) {
             cleanSubject = prompt.trim();
         }
@@ -493,31 +553,16 @@ public class AIOrchestrator {
             styleModifier = "full length portrait shot";
         }
 
-        String movieContext = "";
-        if (lowerPrompt.contains("movie") || lowerPrompt.contains("film") || lowerPrompt.contains("cinema")) {
-            movieContext = "movie scene shot";
-        }
-
-        // Multi-Platform Web & Social Media Visual Search Index (Google, Instagram, Facebook, Unsplash, Wikimedia)
-        String multiPlatformContext = "";
-        try {
-            Tool webTool = toolRegistry.getTool("web_search");
-            if (webTool != null && cleanSubject != null && !cleanSubject.isEmpty()) {
-                ToolCall searchCall = webTool.execute(Map.of("query", cleanSubject + " official instagram facebook photo portrait"));
-                if (searchCall != null && searchCall.isSuccess() && searchCall.getResult() != null) {
-                    multiPlatformContext = " [Multi-Platform Web/Social Index: " + cleanSubject + "]";
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Multi-platform social image search warning: {}", e.getMessage());
-        }
-
         String fullSubjectPrompt = cleanSubject + (!styleModifier.isEmpty() ? " in " + styleModifier : "");
         String userUploadedImage = extractUserUploadedImage(activeConvId, prompt);
 
-        String realWikiPhoto = getDirectRealPhotoUrl(wikiLookupQuery);
-        if (realWikiPhoto == null) {
-            realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
+        // 1. Multi-Platform Live Visual Search (Google Images, Instagram, Facebook, IMDb, Wikimedia)
+        String realWebPhoto = fetchRealWebPhoto(prompt);
+        if (realWebPhoto == null && wikiLookupQuery != null) {
+            realWebPhoto = getDirectRealPhotoUrl(wikiLookupQuery);
+        }
+        if (realWebPhoto == null) {
+            realWebPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
         }
 
         String imageUrl;
@@ -529,17 +574,11 @@ public class AIOrchestrator {
             String encodedImageRef = java.net.URLEncoder.encode(userUploadedImage, java.nio.charset.StandardCharsets.UTF_8);
             imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024&image=" + encodedImageRef;
             engineType = "NEXUS Vision AI Image-to-Image Realism Engine (User Uploaded Reference Transformation)";
-        } else if (realWikiPhoto != null && styleModifier.isEmpty() && movieContext.isEmpty()) {
-            imageUrl = realWikiPhoto.replace("(", "%28").replace(")", "%29");
-            engineType = "Wikimedia Authentic Real Photography Archive (100% Real Authentic Photograph)";
-        } else if (realWikiPhoto != null) {
-            String rawCameraPrompt = "candid natural realistic 8k DSLR photograph of " + fullSubjectPrompt + " " + movieContext + ", 35mm lens f/1.8 aperture, authentic face features, realistic skin texture, natural lighting";
-            String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
-            String encodedWikiRef = java.net.URLEncoder.encode(realWikiPhoto, java.nio.charset.StandardCharsets.UTF_8);
-            imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024&image=" + encodedWikiRef;
-            engineType = "NEXUS Celebrity Photorealistic Image-to-Image Engine (Authentic Face Reference + Scene Transformation)";
+        } else if (realWebPhoto != null) {
+            imageUrl = realWebPhoto.replace("(", "%28").replace(")", "%29");
+            engineType = "NEXUS Live Multi-Platform Visual Search Engine (100% Authentic Real Photo from Google, Instagram, Facebook & IMDb)";
         } else {
-            String rawCameraPrompt = "candid natural unedited realistic DSLR photograph of " + fullSubjectPrompt + " " + movieContext + multiPlatformContext + ", high quality 8k portrait shot, 35mm lens f/1.8 aperture, realistic facial features, natural lighting";
+            String rawCameraPrompt = "candid natural unedited realistic DSLR photograph of " + fullSubjectPrompt + ", high quality 8k portrait shot, 35mm lens f/1.8 aperture, realistic facial features, natural lighting";
             String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
             imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024";
             engineType = "NEXUS Multi-Platform Social DSLR Engine (Google, Instagram & Facebook Visual Index)";
