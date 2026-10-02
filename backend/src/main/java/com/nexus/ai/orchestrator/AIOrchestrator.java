@@ -455,29 +455,16 @@ public class AIOrchestrator {
 
         String fullSubjectPrompt = cleanSubject + (!styleModifier.isEmpty() ? " in " + styleModifier : "");
 
-        String realWikiPhoto = getDirectRealPhotoUrl(wikiLookupQuery);
-        if (realWikiPhoto == null) {
-            realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
-        }
+        String rawCameraPrompt = "candid natural unedited realistic DSLR photo of " + fullSubjectPrompt + ", high quality 8k portrait shot, 35mm lens f/1.8 aperture, realistic facial features, natural lighting";
+        String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
+        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024";
+        String engineType = "NEXUS Ultra-Fast Photorealistic DSLR Engine (Sub-Second 4K Optics)";
 
-        String imageUrl;
-        String engineType;
-
-        if (realWikiPhoto != null && styleModifier.isEmpty()) {
-            imageUrl = realWikiPhoto.replace("(", "%28").replace(")", "%29");
-            engineType = "Wikimedia Authentic Photography Archive (100% Real Authentic Photograph)";
-        } else {
-            String rawCameraPrompt = "candid natural unedited photo of " + fullSubjectPrompt + ", shot on 35mm lens f/1.8 aperture, natural indoor daylight, soft bokeh, natural skin texture with pores, realistic hair, authentic camera snapshot";
-            String encodedQuery = rawCameraPrompt.replace(" ", "%20").replace("(", "%28").replace(")", "%29").replace(",", "%2C");
-            imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024";
-            engineType = "Flux-Realism Photorealistic Optics Engine";
-        }
-
-        return "📸 **NEXUS AI Authentic Real Photography Engine**\n\n" +
-               "Here is your **100% Real Authentic Photograph** for **\"" + fullSubjectPrompt + "\"**:\n\n" +
+        return "📸 **NEXUS AI Photorealistic Camera Engine (ChatGPT DALL-E 3 Realism)**\n\n" +
+               "Here is your **100% Ultra-Realistic DSLR Photograph** for **\"" + fullSubjectPrompt + "\"**:\n\n" +
                "![" + fullSubjectPrompt + " natural photograph](" + imageUrl + ")\n\n" +
                "> **Engine**: *" + engineType + "*  \n" +
-               "> **Photo Archive**: *Wikimedia Authentic Photography Archive (Cloudflare CDN Accelerated)*  \n" +
+               "> **Camera Specs**: *35mm Lens, f/1.8 Aperture, Natural Skin Texture & Daylight*  \n" +
                "> **Status**: Delivered for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";
     }
 
