@@ -420,12 +420,28 @@ public class AIOrchestrator {
             cleanQuery = cleanQuery.replaceAll("\\s+", " ").trim();
             if (cleanQuery.isEmpty()) cleanQuery = query.trim();
 
+            // Movie & Celebrity Typo Normalization & Keyword Target Enhancement
+            String lower = cleanQuery.toLowerCase();
+            cleanQuery = cleanQuery.replaceAll("(?i)\\b(raceguram|racegurram|race guram)\\b", "Race Gurram");
+            cleanQuery = cleanQuery.replaceAll("(?i)\\b(dukudu|dukudoo)\\b", "Dookudu");
+            cleanQuery = cleanQuery.replaceAll("(?i)\\b(kalki)\\b", "Kalki 2898 AD");
+            cleanQuery = cleanQuery.replaceAll("(?i)\\b(pushpa2|pushpa 2)\\b", "Pushpa 2 The Rule");
+
+            String searchQuery = cleanQuery;
+            if (lower.contains("movie") || lower.contains("film") || lower.contains("cinema") || lower.contains("stills") || lower.contains("poster")) {
+                if (!lower.contains("stills") && !lower.contains("poster")) {
+                    searchQuery = cleanQuery + " movie stills scene HD photo poster";
+                }
+            } else {
+                searchQuery = cleanQuery + " official photo portrait";
+            }
+
             java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
                     .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
                     .connectTimeout(java.time.Duration.ofSeconds(4))
                     .build();
 
-            String ddgUrl = "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(cleanQuery, java.nio.charset.StandardCharsets.UTF_8);
+            String ddgUrl = "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode(searchQuery, java.nio.charset.StandardCharsets.UTF_8);
             java.net.http.HttpRequest initReq = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(ddgUrl))
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -449,7 +465,7 @@ public class AIOrchestrator {
 
             if (vqd != null) {
                 String imgApiUrl = "https://duckduckgo.com/i.js?l=us-en&o=json&q=" +
-                        java.net.URLEncoder.encode(cleanQuery, java.nio.charset.StandardCharsets.UTF_8) +
+                        java.net.URLEncoder.encode(searchQuery, java.nio.charset.StandardCharsets.UTF_8) +
                         "&vqd=" + vqd;
                 java.net.http.HttpRequest imgReq = java.net.http.HttpRequest.newBuilder()
                         .uri(java.net.URI.create(imgApiUrl))
@@ -463,7 +479,7 @@ public class AIOrchestrator {
                     com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(imgResp.body());
                     com.fasterxml.jackson.databind.JsonNode results = root.get("results");
                     if (results != null && results.isArray() && results.size() > 0) {
-                        for (int i = 0; i < Math.min(5, results.size()); i++) {
+                        for (int i = 0; i < Math.min(6, results.size()); i++) {
                             com.fasterxml.jackson.databind.JsonNode item = results.get(i);
                             String imgUrl = item.has("image") ? item.get("image").asText() : null;
                             String thumbUrl = item.has("thumbnail") ? item.get("thumbnail").asText() : null;
