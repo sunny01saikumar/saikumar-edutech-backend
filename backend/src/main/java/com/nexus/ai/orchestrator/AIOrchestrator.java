@@ -452,24 +452,10 @@ public class AIOrchestrator {
 
         String fullSubjectPrompt = cleanSubject + (!styleModifier.isEmpty() ? " in " + styleModifier : "");
 
-        String realWikiPhoto = getDirectRealPhotoUrl(wikiLookupQuery);
-        if (realWikiPhoto == null) {
-            realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
-        }
-
-        String imageUrl;
-        String engineType;
-
-        if (realWikiPhoto != null && styleModifier.isEmpty()) {
-            imageUrl = realWikiPhoto.replace("(", "%28").replace(")", "%29");
-            engineType = "Wikimedia Commons Real Photography Archive (100% Authentic Photo)";
-        } else {
-            String rawCameraPrompt = "candid natural unedited photo of " + fullSubjectPrompt + ", shot on 35mm lens f/1.8 aperture, natural indoor daylight, soft bokeh, natural skin texture with pores, realistic hair, authentic camera snapshot";
-            String encodedQuery = rawCameraPrompt.replace(" ", "%20");
-            imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=false&seed=" + randomSeed + "&width=1024&height=1024";
-            imageUrl = imageUrl.replace("(", "%28").replace(")", "%29");
-            engineType = "Flux-Realism 35mm Optics RAW Engine (Unedited Natural Camera Optics)";
-        }
+        String rawCameraPrompt = "candid natural unedited photo of " + fullSubjectPrompt + ", shot on 35mm lens f/1.8 aperture, natural indoor daylight, soft bokeh, natural skin texture with pores, realistic hair, authentic camera snapshot";
+        String encodedQuery = rawCameraPrompt.replace(" ", "%20").replace("(", "%28").replace(")", "%29").replace(",", "%2C");
+        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024";
+        String engineType = "Flux-Realism 35mm Optics RAW Engine (ChatGPT DALL-E 3 Realism)";
 
         return "📸 **NEXUS AI Photorealistic Camera Engine (ChatGPT DALL-E 3 Realism)**\n\n" +
                "Here is your **100% Natural Candid DSLR Photograph** for **\"" + fullSubjectPrompt + "\"**:\n\n" +

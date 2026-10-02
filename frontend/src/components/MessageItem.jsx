@@ -13,15 +13,19 @@ function GeneratedImageCard({ src, alt }) {
   const cleanSubject = encodeURIComponent((alt || "image").replace(/[^a-zA-Z0-9 ]/g, "").trim() || "portrait");
 
   const handleError = () => {
-    if (retryCount === 0 && currentSrc && currentSrc.includes("image.pollinations.ai")) {
-      setRetryCount(1);
-      setCurrentSrc(`https://pollinations.ai/p/${cleanSubject}?width=800&height=800&seed=42&nologo=true`);
-    } else if (retryCount < 2) {
-      setRetryCount(prev => prev + 1);
-      setCurrentSrc(`https://pollinations.ai/p/${cleanSubject}?width=800&height=800&seed=${Date.now()}&nologo=true`);
-    } else {
-      setHasError(true);
-    }
+    setRetryCount(prev => {
+      const nextCount = prev + 1;
+      if (nextCount === 1) {
+        setCurrentSrc(`https://pollinations.ai/p/${cleanSubject}?width=1024&height=1024&seed=42&nologo=true&model=flux`);
+      } else if (nextCount === 2) {
+        setCurrentSrc(`https://image.pollinations.ai/prompt/${cleanSubject}?width=800&height=800&seed=${Date.now()}&nologo=true`);
+      } else if (nextCount === 3) {
+        setCurrentSrc(`https://picsum.photos/seed/${cleanSubject}/800/800`);
+      } else {
+        setHasError(true);
+      }
+      return nextCount;
+    });
   };
 
   useEffect(() => {
@@ -31,8 +35,8 @@ function GeneratedImageCard({ src, alt }) {
     const sanitizedSrc = src ? src.replace(/\(/g, '%28').replace(/\)/g, '%29') : src;
     setCurrentSrc(sanitizedSrc);
 
-    // Safety timeout fallback (30s) only for AI image generation streams, NOT for static authentic photos
-    if (sanitizedSrc && !sanitizedSrc.includes("wikimedia") && !sanitizedSrc.includes("wikipedia")) {
+    // Safety timeout fallback (30s) for image generation streams
+    if (sanitizedSrc) {
       const timer = setTimeout(() => {
         setLoaded(prev => {
           if (!prev) {
