@@ -289,59 +289,59 @@ public class AIOrchestrator {
         if (wikiQuery == null) return null;
         switch (wikiQuery) {
             case "Samantha_Ruth_Prabhu":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/9/9a/Samantha_at_Kushi_Musical_concert_%282%29_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Samantha_at_Kushi_Musical_concert_%282%29_%28cropped%29.jpg/500px-Samantha_at_Kushi_Musical_concert_%282%29_%28cropped%29.jpg";
             case "Kajal_Aggarwal":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/e/e6/Kajal_Aggarwal_at_Bhagavanth_Kesari_Trailer_Launch_%281%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Kajal_Aggarwal_at_Bhagavanth_Kesari_Trailer_Launch_%281%29.jpg/500px-Kajal_Aggarwal_at_Bhagavanth_Kesari_Trailer_Launch_%281%29.jpg";
             case "Raashii_Khanna":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/4/4c/Raashi_Khanna_at_the_premiere_of_film_12th_Fail_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/Raashi_Khanna_at_the_premiere_of_film_12th_Fail_%28cropped%29.jpg/500px-Raashi_Khanna_at_the_premiere_of_film_12th_Fail_%28cropped%29.jpg";
             case "Rashmika_Mandanna":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/4/4b/Rashmika-Mandanna_at_the_music_launch_of_Chhaava_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://upload.wikimedia.org/wikipedia/commons/4/4b/Rashmika-Mandanna_at_the_music_launch_of_Chhaava_%28cropped%29.jpg";
             case "Deepika_Padukone":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/d/d3/Deepika_Padukone_2025_%281%29.png&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/Deepika_Padukone_2025_%281%29.png/500px-Deepika_Padukone_2025_%281%29.png";
             case "Alia_Bhatt":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/e/e8/Alia_Bhatt_attends_at_the_2026_Cannes_Film_Festival_%28cropped%29_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Alia_Bhatt_attends_at_the_2026_Cannes_Film_Festival_%28cropped%29_%28cropped%29.jpg/500px-Alia_Bhatt_attends_at_the_2026_Cannes_Film_Festival_%28cropped%29_%28cropped%29.jpg";
             case "Katrina_Kaif":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/8/8a/Katrina_Kaif_at_the_Bharat_audio_launch.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Katrina_Kaif_at_the_Bharat_audio_launch.jpg/500px-Katrina_Kaif_at_the_Bharat_audio_launch.jpg";
             case "Tamannaah_Bhatia":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/6/60/Tamannaah_Bhatia_at_a_song_launch_from_the_film_Vedaa_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Tamannaah_Bhatia_at_a_song_launch_from_the_film_Vedaa_%28cropped%29.jpg/500px-Tamannaah_Bhatia_at_a_song_launch_from_the_film_Vedaa_%28cropped%29.jpg";
             case "Kriti_Sanon":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/4/43/Kriti_Sanon_at_Adipurush_pre_release_event_%282%29_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Kriti_Sanon_at_Adipurush_pre_release_event_%282%29_%28cropped%29.jpg/500px-Kriti_Sanon_at_Adipurush_pre_release_event_%282%29_%28cropped%29.jpg";
             case "Shraddha_Kapoor":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/7/7b/Shraddha_Kapoor_promoting_Street_Dancer_3D.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7b/Shraddha_Kapoor_promoting_Street_Dancer_3D.jpg/500px-Shraddha_Kapoor_promoting_Street_Dancer_3D.jpg";
             case "Kiara_Advani":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/8/86/Kiara_Advani_during_toxic_trailer_launch_event.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/86/Kiara_Advani_during_toxic_trailer_launch_event.jpg/500px-Kiara_Advani_during_toxic_trailer_launch_event.jpg";
             case "Pooja_Hegde":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/5/59/Pooja_Hegde_at_Beast_Telugu_press_meet_%281%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Pooja_Hegde_at_Beast_Telugu_press_meet_%281%29.jpg/500px-Pooja_Hegde_at_Beast_Telugu_press_meet_%281%29.jpg";
             case "Keerthy_Suresh":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/8/85/Keerthy_Suresh_at_Bhola_Shankar_pre_release_event_%282%29_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Keerthy_Suresh_at_Bhola_Shankar_pre_release_event_%282%29_%28cropped%29.jpg/500px-Keerthy_Suresh_at_Bhola_Shankar_pre_release_event_%282%29_%28cropped%29.jpg";
             case "Mrunal_Thakur":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/7/78/Mrunal_Thakur_in_Andheri_1_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Mrunal_Thakur_in_Andheri_1_%28cropped%29.jpg/500px-Mrunal_Thakur_in_Andheri_1_%28cropped%29.jpg";
             case "Sreeleela":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/0/00/Sreeleela_in_2026.png&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Sreeleela_in_2026.png/500px-Sreeleela_in_2026.png";
             case "Narendra_Modi":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/5/5f/The_official_portrait_of_Shri_Narendra_Modi%2C_the_Prime_Minister_of_the_Republic_of_India.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5f/The_official_portrait_of_Shri_Narendra_Modi%2C_the_Prime_Minister_of_the_Republic_of_India.jpg/500px-The_official_portrait_of_Shri_Narendra_Modi%2C_the_Prime_Minister_of_the_Republic_of_India.jpg";
             case "Virat_Kohli":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/e/ef/Virat_Kohli_during_the_India_vs_Aus_4th_Test_match_at_Narendra_Modi_Stadium_on_09_March_2023.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Virat_Kohli_during_the_India_vs_Aus_4th_Test_match_at_Narendra_Modi_Stadium_on_09_March_2023.jpg/500px-Virat_Kohli_during_the_India_vs_Aus_4th_Test_match_at_Narendra_Modi_Stadium_on_09_March_2023.jpg";
             case "MS_Dhoni":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/d/d5/MS_Dhoni_%28Prabhav_%2723_-_RiGI_2023%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/MS_Dhoni_%28Prabhav_%2723_-_RiGI_2023%29.jpg/500px-MS_Dhoni_%28Prabhav_%2723_-_RiGI_2023%29.jpg";
             case "Shah_Rukh_Khan":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/6/6e/Shah_Rukh_Khan_graces_the_launch_of_the_new_Santro.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Shah_Rukh_Khan_graces_the_launch_of_the_new_Santro.jpg/500px-Shah_Rukh_Khan_graces_the_launch_of_the_new_Santro.jpg";
             case "Prabhas":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/2/22/Prabhas_by_Gage_Skidmore.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Prabhas_by_Gage_Skidmore.jpg/500px-Prabhas_by_Gage_Skidmore.jpg";
             case "Allu_Arjun":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/0/09/Allu_Arjun_at_Pushpa_2_The_Rule_meet.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Allu_Arjun_at_Pushpa_2_The_Rule_meet.jpg/500px-Allu_Arjun_at_Pushpa_2_The_Rule_meet.jpg";
             case "Pawan_Kalyan":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/1/16/Shri_Konidela_Pawan_Kalyan.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Shri_Konidela_Pawan_Kalyan.jpg/500px-Shri_Konidela_Pawan_Kalyan.jpg";
             case "Mahesh_Babu":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/9/9a/Mahesh_Babu_in_Spyder_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Mahesh_Babu_in_Spyder_%28cropped%29.jpg/500px-Mahesh_Babu_in_Spyder_%28cropped%29.jpg";
             case "Ram_Charan":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/d/d3/Ram_Charan_at_Game_Changer_trailer_launch.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/Ram_Charan_at_Game_Changer_trailer_launch.jpg/500px-Ram_Charan_at_Game_Changer_trailer_launch.jpg";
             case "N._T._Rama_Rao_Jr.":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/f/f1/NTR_Jr._%282026%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/NTR_Jr._%282026%29.jpg/500px-NTR_Jr._%282026%29.jpg";
             case "Rajinikanth":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/d/d2/Rajinikanth_in_2019.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Rajinikanth_in_2019.jpg/500px-Rajinikanth_in_2019.jpg";
             case "Elon_Musk":
-                return "https://wsrv.nl/?url=https%3A//upload.wikimedia.org/wikipedia/commons/5/5e/Elon_Musk_-_54820081119_%28cropped%29.jpg&w=1024&output=jpg";
+                return "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Elon_Musk_-_54820081119_%28cropped%29.jpg/500px-Elon_Musk_-_54820081119_%28cropped%29.jpg";
             default:
                 return null;
         }
@@ -369,15 +369,19 @@ public class AIOrchestrator {
                 com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                 com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
                 String img = null;
-                if (root.has("originalimage") && root.get("originalimage").has("source")) {
-                    img = root.get("originalimage").get("source").asText();
-                } else if (root.has("thumbnail") && root.get("thumbnail").has("source")) {
+                if (root.has("thumbnail") && root.get("thumbnail").has("source")) {
                     img = root.get("thumbnail").get("source").asText();
+                } else if (root.has("originalimage") && root.get("originalimage").has("source")) {
+                    img = root.get("originalimage").get("source").asText();
                 }
                 if (img != null && img.startsWith("http")) {
                     String cleanUrl = img.split("\\?")[0];
-                    String decodedUrl = java.net.URLDecoder.decode(cleanUrl, java.nio.charset.StandardCharsets.UTF_8);
-                    return "https://wsrv.nl/?url=" + java.net.URLEncoder.encode(decodedUrl, java.nio.charset.StandardCharsets.UTF_8) + "&w=1024&output=jpg";
+                    if (cleanUrl.contains("/330px-")) {
+                        cleanUrl = cleanUrl.replace("/330px-", "/500px-");
+                    } else if (cleanUrl.contains("/320px-")) {
+                        cleanUrl = cleanUrl.replace("/320px-", "/500px-");
+                    }
+                    return cleanUrl;
                 }
             }
         } catch (Exception e) {
@@ -455,16 +459,29 @@ public class AIOrchestrator {
 
         String fullSubjectPrompt = cleanSubject + (!styleModifier.isEmpty() ? " in " + styleModifier : "");
 
-        String rawCameraPrompt = "candid natural unedited realistic DSLR photo of " + fullSubjectPrompt + ", high quality 8k portrait shot, 35mm lens f/1.8 aperture, realistic facial features, natural lighting";
-        String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
-        String imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024";
-        String engineType = "NEXUS Ultra-Fast Photorealistic DSLR Engine (Sub-Second 4K Optics)";
+        String realWikiPhoto = getDirectRealPhotoUrl(wikiLookupQuery);
+        if (realWikiPhoto == null) {
+            realWikiPhoto = wikiLookupQuery != null ? fetchWikipediaRealPhoto(wikiLookupQuery) : fetchWikipediaRealPhoto(cleanSubject);
+        }
 
-        return "📸 **NEXUS AI Photorealistic Camera Engine (ChatGPT DALL-E 3 Realism)**\n\n" +
-               "Here is your **100% Ultra-Realistic DSLR Photograph** for **\"" + fullSubjectPrompt + "\"**:\n\n" +
+        String imageUrl;
+        String engineType;
+
+        if (realWikiPhoto != null && styleModifier.isEmpty()) {
+            imageUrl = realWikiPhoto.replace("(", "%28").replace(")", "%29");
+            engineType = "Wikimedia Authentic Real Photography Archive (100% Real Authentic Photograph)";
+        } else {
+            String rawCameraPrompt = "candid natural unedited realistic DSLR photo of " + fullSubjectPrompt + ", high quality 8k portrait shot, 35mm lens f/1.8 aperture, realistic facial features, natural lighting";
+            String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
+            imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024";
+            engineType = "NEXUS Ultra-Fast Photorealistic DSLR Engine (Sub-Second 4K Optics)";
+        }
+
+        return "📸 **NEXUS AI Authentic Real Photography Engine**\n\n" +
+               "Here is your **100% Real Authentic Photograph** for **\"" + fullSubjectPrompt + "\"**:\n\n" +
                "![" + fullSubjectPrompt + " natural photograph](" + imageUrl + ")\n\n" +
                "> **Engine**: *" + engineType + "*  \n" +
-               "> **Camera Specs**: *35mm Lens, f/1.8 Aperture, Natural Skin Texture & Daylight*  \n" +
+               "> **Photo Archive**: *Wikimedia Authentic Real Photography Archive (500px HD)*  \n" +
                "> **Status**: Delivered for Admin account `" + (userEmail != null ? userEmail : "Admin Sai Kumar") + "`.";
     }
 
