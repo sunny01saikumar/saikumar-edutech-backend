@@ -414,14 +414,50 @@ public class AIOrchestrator {
     }
 
     private String generateAdminMediaResponse(String prompt, String activeConvId, String userEmail) {
-        boolean isVideo = prompt.toLowerCase().contains("video") || prompt.toLowerCase().contains("clip") ||
-                          prompt.toLowerCase().contains("movie") || prompt.toLowerCase().contains("mp4") ||
-                          prompt.toLowerCase().contains("sora") || prompt.toLowerCase().contains("runway") ||
-                          prompt.toLowerCase().contains("animation");
+        String lowerPrompt = prompt.toLowerCase().trim();
+
+        boolean isExplicitPhoto = lowerPrompt.contains("photo") || lowerPrompt.contains("picture") ||
+                                  lowerPrompt.contains("image") || lowerPrompt.contains("pic") ||
+                                  lowerPrompt.contains("pics") || lowerPrompt.contains("img") ||
+                                  lowerPrompt.contains("portrait") || lowerPrompt.contains("still") ||
+                                  lowerPrompt.contains("poster") || lowerPrompt.contains("foto") ||
+                                  lowerPrompt.contains("wallpaper") || lowerPrompt.contains("drawing");
+
+        boolean isVideo = !isExplicitPhoto && (
+                          lowerPrompt.contains("video") || lowerPrompt.contains("clip") ||
+                          lowerPrompt.contains("mp4") || lowerPrompt.contains("sora") ||
+                          lowerPrompt.contains("runway") || lowerPrompt.contains("animation") ||
+                          lowerPrompt.contains("generate video") || lowerPrompt.contains("create video") ||
+                          lowerPrompt.contains("make video") || lowerPrompt.contains("video render")
+                          );
+
+        String wikiLookupQuery = resolveWikiQuery(prompt);
+        if (wikiLookupQuery == null && activeConvId != null) {
+            List<Message> history = conversationService.getMessagesForConversation(activeConvId);
+            for (int i = history.size() - 1; i >= 0; i--) {
+                Message msg = history.get(i);
+                if (msg.getContent() != null) {
+                    String resolved = resolveWikiQuery(msg.getContent());
+                    if (resolved != null) {
+                        wikiLookupQuery = resolved;
+                        break;
+                    }
+                }
+            }
+        }
 
         String cleanSubject = prompt;
-        cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|clip|movie|mp4|animation|of|with|hd|portrait|realistic|real|photorealistic|in|mode|i|want|give|get|look|style)\\b", "").trim();
+        cleanSubject = cleanSubject.replaceAll("(?i)\\b(generate|create|draw|make|show|me|an|a|the|image|picture|photo|photos|phot|pht|pic|pics|img|imgs|foto|fotos|video|clip|mp4|animation|of|with|hd|portrait|realistic|real|photorealistic|in|mode|i|want|give|get|look|style)\\b", "").trim();
         cleanSubject = cleanSubject.replaceAll("\\s+", " ").trim();
+
+        String celebrityName = wikiLookupQuery != null ? formatCleanSubject(wikiLookupQuery) : "";
+        if (!celebrityName.isEmpty()) {
+            if (cleanSubject.isEmpty() || cleanSubject.toLowerCase().contains(wikiLookupQuery.toLowerCase().replace("_", " "))) {
+                cleanSubject = celebrityName;
+            } else {
+                cleanSubject = celebrityName + " " + cleanSubject;
+            }
+        }
 
         if (cleanSubject.isEmpty()) {
             cleanSubject = prompt.trim();
@@ -431,7 +467,7 @@ public class AIOrchestrator {
 
         if (isVideo) {
             String rawVideoPrompt = "cinematic 4k video render of " + cleanSubject + ", 60fps realistic camera motion, ultra high definition lighting, masterpiece studio video";
-            String encodedQuery = rawVideoPrompt.replace(" ", "%20");
+            String encodedQuery = java.net.URLEncoder.encode(rawVideoPrompt, java.nio.charset.StandardCharsets.UTF_8);
             String videoFrameUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1280&height=720";
             videoFrameUrl = videoFrameUrl.replace("(", "%28").replace(")", "%29");
 
@@ -444,7 +480,6 @@ public class AIOrchestrator {
                    "📥 **Download Video Frame/Clip**: [🎥 Download 4K Video Renders](" + videoFrameUrl + ")";
         }
 
-        String lowerPrompt = prompt.toLowerCase();
         String styleModifier = "";
         if (lowerPrompt.matches(".*\\b(bikini|swimsuit|swimwear|monokini|beachwear|beach|lingerie)\\b.*")) {
             styleModifier = "stylish swimwear bikini photoshoot";
@@ -458,28 +493,9 @@ public class AIOrchestrator {
             styleModifier = "full length portrait shot";
         }
 
-        String wikiLookupQuery = resolveWikiQuery(prompt);
-        if (wikiLookupQuery != null) {
-            cleanSubject = formatCleanSubject(wikiLookupQuery);
-        }
-
-        if (wikiLookupQuery == null && activeConvId != null) {
-            List<Message> history = conversationService.getMessagesForConversation(activeConvId);
-            for (int i = history.size() - 1; i >= 0; i--) {
-                Message msg = history.get(i);
-                if (msg.getContent() != null) {
-                    String resolved = resolveWikiQuery(msg.getContent());
-                    if (resolved != null) {
-                        wikiLookupQuery = resolved;
-                        cleanSubject = formatCleanSubject(wikiLookupQuery);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (cleanSubject.isEmpty()) {
-            cleanSubject = prompt.trim();
+        String movieContext = "";
+        if (lowerPrompt.contains("movie") || lowerPrompt.contains("film") || lowerPrompt.contains("cinema")) {
+            movieContext = "movie scene shot";
         }
 
         // Multi-Platform Web & Social Media Visual Search Index (Google, Instagram, Facebook, Unsplash, Wikimedia)
@@ -513,11 +529,17 @@ public class AIOrchestrator {
             String encodedImageRef = java.net.URLEncoder.encode(userUploadedImage, java.nio.charset.StandardCharsets.UTF_8);
             imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024&image=" + encodedImageRef;
             engineType = "NEXUS Vision AI Image-to-Image Realism Engine (User Uploaded Reference Transformation)";
-        } else if (realWikiPhoto != null && styleModifier.isEmpty()) {
+        } else if (realWikiPhoto != null && styleModifier.isEmpty() && movieContext.isEmpty()) {
             imageUrl = realWikiPhoto.replace("(", "%28").replace(")", "%29");
             engineType = "Wikimedia Authentic Real Photography Archive (100% Real Authentic Photograph)";
+        } else if (realWikiPhoto != null) {
+            String rawCameraPrompt = "candid natural realistic 8k DSLR photograph of " + fullSubjectPrompt + " " + movieContext + ", 35mm lens f/1.8 aperture, authentic face features, realistic skin texture, natural lighting";
+            String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
+            String encodedWikiRef = java.net.URLEncoder.encode(realWikiPhoto, java.nio.charset.StandardCharsets.UTF_8);
+            imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024&image=" + encodedWikiRef;
+            engineType = "NEXUS Celebrity Photorealistic Image-to-Image Engine (Authentic Face Reference + Scene Transformation)";
         } else {
-            String rawCameraPrompt = "candid natural unedited realistic DSLR photograph of " + fullSubjectPrompt + multiPlatformContext + ", high quality 8k portrait shot, 35mm lens f/1.8 aperture, realistic facial features, natural lighting";
+            String rawCameraPrompt = "candid natural unedited realistic DSLR photograph of " + fullSubjectPrompt + " " + movieContext + multiPlatformContext + ", high quality 8k portrait shot, 35mm lens f/1.8 aperture, realistic facial features, natural lighting";
             String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
             imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024";
             engineType = "NEXUS Multi-Platform Social DSLR Engine (Google, Instagram & Facebook Visual Index)";
