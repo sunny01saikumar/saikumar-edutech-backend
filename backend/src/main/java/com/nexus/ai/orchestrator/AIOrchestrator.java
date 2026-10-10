@@ -402,21 +402,68 @@ public class AIOrchestrator {
             byte[] decoded = java.util.Base64.getDecoder().decode(base64Data);
 
             String ext = ".jpg";
-            if (dataUrl.startsWith("data:image/png")) ext = ".png";
-            else if (dataUrl.startsWith("data:image/webp")) ext = ".webp";
+            String mimeType = "image/jpeg";
+            if (dataUrl.startsWith("data:image/png")) {
+                ext = ".png";
+                mimeType = "image/png";
+            } else if (dataUrl.startsWith("data:image/webp")) {
+                ext = ".webp";
+                mimeType = "image/webp";
+            }
 
-            String filename = "upload_" + System.currentTimeMillis() + "_" + (long)(Math.random() * 10000) + ext;
+            // 1. Upload to instant public CDN (tmpfiles.org) so Pollinations backend can download the exact user photo
+            String boundary = "---NexusBoundary" + System.currentTimeMillis();
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            baos.write(("--" + boundary + "\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            baos.write(("Content-Disposition: form-data; name=\"file\"; filename=\"user_photo" + ext + "\"\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            baos.write(("Content-Type: " + mimeType + "\r\n\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            baos.write(decoded);
+            baos.write(("\r\n--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+                    .connectTimeout(java.time.Duration.ofSeconds(6))
+                    .build();
+
+            java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create("https://tmpfiles.org/api/v1/upload"))
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .timeout(java.time.Duration.ofSeconds(8))
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofByteArray(baos.toByteArray()))
+                    .build();
+
+            java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200) {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(resp.body());
+                if (root.has("status") && "success".equalsIgnoreCase(root.get("status").asText()) && root.has("data") && root.get("data").has("url")) {
+                    String pageUrl = root.get("data").get("url").asText();
+                    String directUrl = pageUrl.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+                    log.info("Successfully published user photo to public CDN: {}", directUrl);
+                    return directUrl;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Public image host upload warning: {}", e.getMessage());
+        }
+
+        // 2. Local disk fallback
+        try {
+            int commaIdx = dataUrl.indexOf(",");
+            String base64Data = dataUrl.substring(commaIdx + 1);
+            byte[] decoded = java.util.Base64.getDecoder().decode(base64Data);
+            String filename = "upload_" + System.currentTimeMillis() + "_" + (long)(Math.random() * 10000) + ".jpg";
             java.nio.file.Path uploadsDir = java.nio.file.Paths.get("backend/src/main/resources/static/uploads").toAbsolutePath().normalize();
             if (!java.nio.file.Files.exists(uploadsDir)) {
                 java.nio.file.Files.createDirectories(uploadsDir);
             }
             java.nio.file.Path filePath = uploadsDir.resolve(filename);
             java.nio.file.Files.write(filePath, decoded);
-
             return "https://saikumar-nexus.com/uploads/" + filename;
         } catch (Exception e) {
-            log.warn("Failed to save user uploaded data URL image to static upload file: {}", e.getMessage());
+            log.warn("Local static upload fallback warning: {}", e.getMessage());
         }
+
         return dataUrl;
     }
 
