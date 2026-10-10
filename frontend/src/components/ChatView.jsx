@@ -143,6 +143,9 @@ export default function ChatView({
     }
 
     let finalPrompt = promptToSend;
+    if (attachedImage) {
+      finalPrompt += `\n\n[Uploaded Image Attachment: ${attachedImage}]`;
+    }
     if (attachedDoc) {
       finalPrompt += `\n\n[Attached RAG Document: ${attachedDoc}]`;
     }

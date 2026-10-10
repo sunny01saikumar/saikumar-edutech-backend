@@ -168,6 +168,9 @@ public class AIOrchestrator {
     private boolean isMediaGenerationIntent(String prompt, String activeConvId) {
         if (prompt == null) return false;
         String lower = prompt.toLowerCase().trim();
+        if (lower.contains("[uploaded image attachment:") || lower.contains("data:image/") || lower.contains("modify") || lower.contains("transform") || lower.contains("edit photo") || lower.contains("change photo") || lower.contains("convert photo")) {
+            return true;
+        }
         boolean hasKeyword = lower.contains("image") || lower.contains("picture") || lower.contains("photo") ||
                lower.contains("phot") || lower.contains("pht") || lower.contains("pic") ||
                lower.contains("pics") || lower.contains("img") || lower.contains("imgs") ||
@@ -390,25 +393,76 @@ public class AIOrchestrator {
         return null;
     }
 
+    private String saveDataUrlToUploadFile(String dataUrl) {
+        if (dataUrl == null || !dataUrl.startsWith("data:image/")) return dataUrl;
+        try {
+            int commaIdx = dataUrl.indexOf(",");
+            if (commaIdx == -1) return dataUrl;
+            String base64Data = dataUrl.substring(commaIdx + 1);
+            byte[] decoded = java.util.Base64.getDecoder().decode(base64Data);
+
+            String ext = ".jpg";
+            if (dataUrl.startsWith("data:image/png")) ext = ".png";
+            else if (dataUrl.startsWith("data:image/webp")) ext = ".webp";
+
+            String filename = "upload_" + System.currentTimeMillis() + "_" + (long)(Math.random() * 10000) + ext;
+            java.nio.file.Path uploadsDir = java.nio.file.Paths.get("backend/src/main/resources/static/uploads").toAbsolutePath().normalize();
+            if (!java.nio.file.Files.exists(uploadsDir)) {
+                java.nio.file.Files.createDirectories(uploadsDir);
+            }
+            java.nio.file.Path filePath = uploadsDir.resolve(filename);
+            java.nio.file.Files.write(filePath, decoded);
+
+            return "https://saikumar-nexus.com/uploads/" + filename;
+        } catch (Exception e) {
+            log.warn("Failed to save user uploaded data URL image to static upload file: {}", e.getMessage());
+        }
+        return dataUrl;
+    }
+
     private String extractUserUploadedImage(String activeConvId, String currentPrompt) {
-        if (currentPrompt != null && currentPrompt.contains("http") && (currentPrompt.contains(".png") || currentPrompt.contains(".jpg") || currentPrompt.contains(".jpeg") || currentPrompt.contains(".webp"))) {
-            int start = currentPrompt.indexOf("http");
-            int end = currentPrompt.indexOf(" ", start);
-            if (end == -1) end = currentPrompt.length();
-            return currentPrompt.substring(start, end).trim();
+        String extracted = findImageRefToken(currentPrompt);
+        if (extracted != null) {
+            return saveDataUrlToUploadFile(extracted);
         }
         if (activeConvId != null) {
             List<Message> history = conversationService.getMessagesForConversation(activeConvId);
             for (int i = history.size() - 1; i >= 0; i--) {
                 Message msg = history.get(i);
-                if (msg.getContent() != null && msg.getContent().contains("http") &&
-                    (msg.getContent().contains(".png") || msg.getContent().contains(".jpg") || msg.getContent().contains(".jpeg") || msg.getContent().contains(".webp"))) {
-                    int start = msg.getContent().indexOf("http");
-                    int end = msg.getContent().indexOf(" ", start);
-                    if (end == -1) end = msg.getContent().length();
-                    return msg.getContent().substring(start, end).trim();
+                if (msg.getContent() != null) {
+                    extracted = findImageRefToken(msg.getContent());
+                    if (extracted != null) {
+                        return saveDataUrlToUploadFile(extracted);
+                    }
                 }
             }
+        }
+        return null;
+    }
+
+    private String findImageRefToken(String text) {
+        if (text == null) return null;
+        if (text.contains("[Uploaded Image Attachment:")) {
+            int start = text.indexOf("[Uploaded Image Attachment:");
+            int urlStart = start + "[Uploaded Image Attachment:".length();
+            int end = text.indexOf("]", urlStart);
+            if (end == -1) end = text.length();
+            return text.substring(urlStart, end).trim();
+        }
+        if (text.contains("data:image/")) {
+            int start = text.indexOf("data:image/");
+            int end = text.indexOf("]", start);
+            if (end == -1) end = text.indexOf(" ", start);
+            if (end == -1) end = text.indexOf("\n", start);
+            if (end == -1) end = text.length();
+            return text.substring(start, end).trim();
+        }
+        if (text.contains("http") && (text.contains(".png") || text.contains(".jpg") || text.contains(".jpeg") || text.contains(".webp"))) {
+            int start = text.indexOf("http");
+            int end = text.indexOf(" ", start);
+            if (end == -1) end = text.indexOf("\n", start);
+            if (end == -1) end = text.length();
+            return text.substring(start, end).trim();
         }
         return null;
     }
@@ -585,11 +639,11 @@ public class AIOrchestrator {
         String engineType;
 
         if (userUploadedImage != null && !userUploadedImage.isEmpty()) {
-            String rawCameraPrompt = "candid natural ultra-realistic 8k DSLR photograph based on uploaded image reference: " + fullSubjectPrompt + ", 35mm lens f/1.8 aperture, realistic skin texture, natural lighting";
+            String rawCameraPrompt = "candid natural 8k DSLR camera photograph, photorealistic unedited photo modification based on user uploaded reference photo: " + fullSubjectPrompt + ", 35mm lens f/1.8 aperture, authentic natural human skin texture, realistic facial features, natural daylight studio lighting, 0% synthetic 0% anime 0% 3d cgi rendering";
             String encodedQuery = java.net.URLEncoder.encode(rawCameraPrompt, java.nio.charset.StandardCharsets.UTF_8);
             String encodedImageRef = java.net.URLEncoder.encode(userUploadedImage, java.nio.charset.StandardCharsets.UTF_8);
             imageUrl = "https://image.pollinations.ai/prompt/" + encodedQuery + "?model=flux-realism&nologo=true&enhance=true&seed=" + randomSeed + "&width=1024&height=1024&image=" + encodedImageRef;
-            engineType = "NEXUS Vision AI Image-to-Image Realism Engine (User Uploaded Reference Transformation)";
+            engineType = "NEXUS Vision AI Image-to-Image Photorealism Engine (User Uploaded Photo Reference Transformation)";
         } else if (realWebPhoto != null) {
             imageUrl = realWebPhoto.replace("(", "%28").replace(")", "%29");
             engineType = "NEXUS Live Multi-Platform Visual Search Engine (100% Authentic Real Photo from Google, Instagram, Facebook & IMDb)";
